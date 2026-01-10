@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
+  TextInput,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -30,8 +31,6 @@ import * as Haptics from "expo-haptics";
 
 import { useAuth } from "@/providers/AuthProvider";
 import { useTheme } from "@/providers/ThemeProvider";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -195,7 +194,7 @@ export default function LoginScreen() {
                     <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
                     <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: errors.email ? colors.destructive : colors.border }]}>
                       <Mail size={20} color={colors.muted} style={styles.inputIcon} />
-                      <Input
+                      <TextInput
                         placeholder="Enter your email"
                         keyboardType="email-address"
                         autoCapitalize="none"
@@ -224,7 +223,7 @@ export default function LoginScreen() {
                     <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
                     <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: errors.password ? colors.destructive : colors.border }]}>
                       <Lock size={20} color={colors.muted} style={styles.inputIcon} />
-                      <Input
+                      <TextInput
                         placeholder="Enter your password"
                         secureTextEntry={!showPassword}
                         autoComplete="password"

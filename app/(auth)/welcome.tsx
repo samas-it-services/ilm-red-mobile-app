@@ -182,23 +182,23 @@ export default function WelcomeScreen() {
   const features = [
     {
       icon: <BookOpen size={24} color={colors.primary} />,
-      title: "Upload & Browse",
-      description: "Upload PDFs, EPUBs and browse page by page",
+      title: "Access Any Book",
+      description: "Upload PDFs, EPUBs and read anywhere",
     },
     {
       icon: <MessageCircle size={24} color={colors.primary} />,
-      title: "AI-Powered Chat",
-      description: "Ask questions about your books with AI",
+      title: "AI Book Discussions",
+      description: "Chat with AI about any book's content",
     },
     {
       icon: <Sparkles size={24} color={colors.primary} />,
-      title: "Beautiful Reading",
-      description: "Stunning page-by-page reading experience",
+      title: "Track Progress",
+      description: "Monitor your reading across all devices",
     },
     {
       icon: <Search size={24} color={colors.primary} />,
-      title: "Smart Discovery",
-      description: "Find and organize your knowledge",
+      title: "Reading Communities",
+      description: "Join clubs and discuss with readers",
     },
   ];
 
@@ -229,7 +229,7 @@ export default function WelcomeScreen() {
             ILM Red
           </Text>
           <Text style={[styles.subtitle, { color: colors.muted }]}>
-            Your Islamic Digital Library
+            Read. Chat. Learn.
           </Text>
         </Animated.View>
 

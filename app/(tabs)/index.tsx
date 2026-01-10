@@ -52,13 +52,20 @@ const CAROUSEL_ITEM_HEIGHT = CAROUSEL_ITEM_WIDTH * 1.4;
 // ============================================================================
 
 const CATEGORY_GRADIENTS: Record<string, [string, string]> = {
-  quran: ["#4F46E5", "#7C3AED"],
-  hadith: ["#10B981", "#059669"],
-  fiqh: ["#F59E0B", "#D97706"],
-  seerah: ["#EC4899", "#DB2777"],
-  history: ["#8B5CF6", "#6D28D9"],
-  spirituality: ["#06B6D4", "#0891B2"],
-  arabic: ["#EF4444", "#DC2626"],
+  popular: ["#EF4444", "#DC2626"],
+  trending: ["#8B5CF6", "#7C3AED"],
+  new: ["#10B981", "#059669"],
+  classics: ["#F59E0B", "#D97706"],
+  academic: ["#3B82F6", "#2563EB"],
+  fiction: ["#EC4899", "#DB2777"],
+  "non-fiction": ["#6366F1", "#4F46E5"],
+  science: ["#14B8A6", "#0D9488"],
+  technology: ["#0EA5E9", "#0284C7"],
+  business: ["#64748B", "#475569"],
+  "self-help": ["#22C55E", "#16A34A"],
+  biography: ["#A855F7", "#9333EA"],
+  history: ["#EA580C", "#C2410C"],
+  children: ["#E11D48", "#BE123C"],
   general: ["#64748B", "#475569"],
 };
 
@@ -374,12 +381,12 @@ function SectionHeader({
 // ============================================================================
 
 const CATEGORIES_DATA = [
-  { id: "quran", label: "Quran", icon: "📖" },
-  { id: "hadith", label: "Hadith", icon: "📚" },
-  { id: "fiqh", label: "Fiqh", icon: "⚖️" },
-  { id: "seerah", label: "Seerah", icon: "🕌" },
-  { id: "history", label: "History", icon: "🏛️" },
-  { id: "spirituality", label: "Spirituality", icon: "✨" },
+  { id: "popular", label: "Popular", icon: "🔥" },
+  { id: "trending", label: "Trending", icon: "📈" },
+  { id: "new", label: "New", icon: "✨" },
+  { id: "classics", label: "Classics", icon: "📚" },
+  { id: "fiction", label: "Fiction", icon: "📖" },
+  { id: "science", label: "Science", icon: "🔬" },
 ];
 
 export default function HomeScreen() {

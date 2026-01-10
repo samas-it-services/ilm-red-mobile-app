@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
+  TextInput,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -48,7 +49,6 @@ import * as Haptics from "expo-haptics";
 
 import { useAuth } from "@/providers/AuthProvider";
 import { useTheme } from "@/providers/ThemeProvider";
-import { Input } from "@/components/ui/Input";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -57,14 +57,14 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 // ============================================================================
 
 const BOOK_CATEGORIES = [
-  { id: "quran", label: "Quran & Tafsir", icon: "📖" },
-  { id: "hadith", label: "Hadith", icon: "📚" },
-  { id: "fiqh", label: "Fiqh", icon: "⚖️" },
-  { id: "seerah", label: "Seerah", icon: "🕌" },
+  { id: "fiction", label: "Fiction", icon: "📖" },
+  { id: "non-fiction", label: "Non-Fiction", icon: "📰" },
+  { id: "science", label: "Science", icon: "🔬" },
+  { id: "technology", label: "Technology", icon: "💻" },
+  { id: "business", label: "Business", icon: "💼" },
+  { id: "self-help", label: "Self-Help", icon: "🌱" },
   { id: "history", label: "History", icon: "🏛️" },
-  { id: "spirituality", label: "Spirituality", icon: "✨" },
-  { id: "arabic", label: "Arabic", icon: "🔤" },
-  { id: "contemporary", label: "Contemporary", icon: "🌍" },
+  { id: "biography", label: "Biography", icon: "👤" },
 ];
 
 const AVATAR_COLORS = [
@@ -241,7 +241,7 @@ function Step1Email({ control, errors, colors, showPassword, setShowPassword, sh
               <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
               <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: errors.email ? colors.destructive : colors.border }]}>
                 <Mail size={20} color={colors.muted} style={styles.inputIcon} />
-                <Input
+                <TextInput
                   placeholder="Enter your email"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -270,7 +270,7 @@ function Step1Email({ control, errors, colors, showPassword, setShowPassword, sh
               <Text style={[styles.label, { color: colors.foreground }]}>Password</Text>
               <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: errors.password ? colors.destructive : colors.border }]}>
                 <Lock size={20} color={colors.muted} style={styles.inputIcon} />
-                <Input
+                <TextInput
                   placeholder="Create a password"
                   secureTextEntry={!showPassword}
                   autoComplete="new-password"
@@ -312,7 +312,7 @@ function Step1Email({ control, errors, colors, showPassword, setShowPassword, sh
               <Text style={[styles.label, { color: colors.foreground }]}>Confirm Password</Text>
               <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: errors.confirmPassword ? colors.destructive : colors.border }]}>
                 <Lock size={20} color={colors.muted} style={styles.inputIcon} />
-                <Input
+                <TextInput
                   placeholder="Confirm your password"
                   secureTextEntry={!showConfirmPassword}
                   autoComplete="new-password"
@@ -418,7 +418,7 @@ function Step2Profile({ control, errors, colors, selectedAvatarColor, setSelecte
               <Text style={[styles.label, { color: colors.foreground }]}>Display Name</Text>
               <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: errors.display_name ? colors.destructive : colors.border }]}>
                 <User size={20} color={colors.muted} style={styles.inputIcon} />
-                <Input
+                <TextInput
                   placeholder="Enter your name"
                   autoComplete="name"
                   value={value}
@@ -445,7 +445,7 @@ function Step2Profile({ control, errors, colors, selectedAvatarColor, setSelecte
               <Text style={[styles.label, { color: colors.foreground }]}>Username</Text>
               <View style={[styles.inputContainer, { backgroundColor: colors.card, borderColor: errors.username ? colors.destructive : colors.border }]}>
                 <AtSign size={20} color={colors.muted} style={styles.inputIcon} />
-                <Input
+                <TextInput
                   placeholder="Choose a username"
                   autoCapitalize="none"
                   autoComplete="username"
