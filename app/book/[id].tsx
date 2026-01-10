@@ -1,6 +1,6 @@
 // Book Detail Screen
 
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import {
   Star,
   Grid3X3,
   MessageCircle,
+  BookOpen,
 } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -36,11 +37,13 @@ import {
   useAddFavorite,
   useRemoveFavorite,
   useFavorites,
+  useMyBookRating,
 } from "@/hooks/useBooks";
 import { getCategoryById } from "@/hooks/useCategories";
 import { LoadingScreen, LoadingOverlay } from "@/components/ui/Loading";
 import { Button } from "@/components/ui/Button";
 import { formatFileSize } from "@/hooks/useUpload";
+import { RatingModal } from "@/components/RatingModal";
 
 // ============================================================================
 // Screen
@@ -53,9 +56,13 @@ export default function BookDetailScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
+  // Rating modal state
+  const [showRatingModal, setShowRatingModal] = useState(false);
+
   // Queries
   const { data: book, isLoading, error } = useBook(id!);
   const { data: favoritesData } = useFavorites();
+  const { data: myRating } = useMyBookRating(id!);
   const { refetch: fetchDownloadUrl, isFetching: isLoadingDownload } =
     useBookDownloadUrl(id!);
   const deleteBook = useDeleteBook();
@@ -65,6 +72,7 @@ export default function BookDetailScreen() {
   const isFavorite = favoritesData?.data.some((b) => b.id === id) ?? false;
   const isOwner = book?.owner.id === user?.id;
   const category = book ? getCategoryById(book.category) : null;
+  const hasPages = (book?.page_count ?? 0) > 0;
 
   // Handlers
   const handleBack = () => {
@@ -125,6 +133,25 @@ export default function BookDetailScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/book/${id}/chat`);
   }, [id, router]);
+
+  const handleRateBook = useCallback(() => {
+    if (isOwner) {
+      Alert.alert("Cannot Rate", "You cannot rate your own book.");
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowRatingModal(true);
+  }, [isOwner]);
+
+  const handleReadBook = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (hasPages) {
+      router.push(`/book/${id}/pages`);
+    } else {
+      // Open PDF viewer
+      router.push(`/book/${id}/pdf`);
+    }
+  }, [id, router, hasPages]);
 
   if (isLoading) {
     return <LoadingScreen message="Loading book details..." />;
@@ -389,7 +416,7 @@ export default function BookDetailScreen() {
             {/* Primary Actions Row */}
             <View style={{ flexDirection: "row", gap: 12 }}>
               <TouchableOpacity
-                onPress={handleBrowsePages}
+                onPress={handleReadBook}
                 style={{
                   flex: 1,
                   flexDirection: "row",
@@ -403,9 +430,13 @@ export default function BookDetailScreen() {
                   borderColor: colors.border,
                 }}
               >
-                <Grid3X3 size={20} color={colors.primary} />
+                {hasPages ? (
+                  <Grid3X3 size={20} color={colors.primary} />
+                ) : (
+                  <BookOpen size={20} color={colors.primary} />
+                )}
                 <Text style={{ fontSize: 15, fontWeight: "600", color: colors.foreground }}>
-                  Browse Pages
+                  {hasPages ? "Browse Pages" : "Read PDF"}
                 </Text>
               </TouchableOpacity>
 
@@ -429,13 +460,65 @@ export default function BookDetailScreen() {
               </TouchableOpacity>
             </View>
 
-            <Button
-              onPress={handleDownload}
-              isLoading={isLoadingDownload}
-              leftIcon={<Download size={20} color="#FFFFFF" />}
-            >
-              Download Book
-            </Button>
+            {/* Rate & Download Row */}
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              {!isOwner && (
+                <TouchableOpacity
+                  onPress={handleRateBook}
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: myRating ? "#FEF3C7" : colors.card,
+                    paddingVertical: 14,
+                    borderRadius: 12,
+                    gap: 8,
+                    borderWidth: 1,
+                    borderColor: myRating ? "#F59E0B" : colors.border,
+                  }}
+                >
+                  <Star
+                    size={20}
+                    color="#F59E0B"
+                    fill={myRating ? "#F59E0B" : "transparent"}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "600",
+                      color: myRating ? "#B45309" : colors.foreground,
+                    }}
+                  >
+                    {myRating ? `Rated ${myRating.rating}/5` : "Rate Book"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                onPress={handleDownload}
+                disabled={isLoadingDownload}
+                style={{
+                  flex: isOwner ? undefined : 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: colors.card,
+                  paddingVertical: 14,
+                  paddingHorizontal: isOwner ? 24 : 0,
+                  borderRadius: 12,
+                  gap: 8,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  opacity: isLoadingDownload ? 0.7 : 1,
+                }}
+              >
+                <Download size={20} color={colors.primary} />
+                <Text style={{ fontSize: 15, fontWeight: "600", color: colors.foreground }}>
+                  Download
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             {isOwner && (
               <Button
@@ -449,6 +532,16 @@ export default function BookDetailScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Rating Modal */}
+      <RatingModal
+        visible={showRatingModal}
+        bookId={id!}
+        bookTitle={book?.title || ""}
+        existingRating={myRating?.rating}
+        existingReview={myRating?.review || ""}
+        onClose={() => setShowRatingModal(false)}
+      />
     </View>
   );
 }

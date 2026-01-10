@@ -2,7 +2,7 @@
 
 import React from "react";
 import { View, Text, ScrollView, TouchableOpacity, Switch, Image } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, Href } from "expo-router";
 import {
   User,
   Mail,
@@ -14,6 +14,9 @@ import {
   HelpCircle,
   Shield,
   BookOpen,
+  Edit3,
+  Info,
+  ShieldCheck,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -118,6 +121,27 @@ export default function ProfileScreen() {
               </Text>
             </View>
           </View>
+
+          {/* Edit Profile Button */}
+          <TouchableOpacity
+            onPress={() => router.push("/profile/edit" as Href)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              marginTop: 16,
+              paddingVertical: 10,
+              backgroundColor: colors.background,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Edit3 size={16} color={colors.primary} style={{ marginRight: 8 }} />
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.primary }}>
+              Edit Profile
+            </Text>
+          </TouchableOpacity>
         </Card>
 
         {/* Theme Settings */}
@@ -179,6 +203,18 @@ export default function ProfileScreen() {
         </Text>
 
         <Card style={{ marginBottom: 24 }} padding="none">
+          {/* Admin Panel - only visible for admin users */}
+          {(user?.roles?.includes("admin") || user?.roles?.includes("super_admin")) && (
+            <>
+              <SettingsItem
+                icon={<ShieldCheck size={22} color={colors.primary} />}
+                label="Admin Panel"
+                onPress={() => router.push("/admin" as Href)}
+                colors={colors}
+              />
+              <View style={{ height: 1, backgroundColor: colors.border }} />
+            </>
+          )}
           <SettingsItem
             icon={<BookOpen size={22} color={colors.foreground} />}
             label="My Uploads"
@@ -204,6 +240,13 @@ export default function ProfileScreen() {
             icon={<HelpCircle size={22} color={colors.foreground} />}
             label="Help & Support"
             onPress={() => {}}
+            colors={colors}
+          />
+          <View style={{ height: 1, backgroundColor: colors.border }} />
+          <SettingsItem
+            icon={<Info size={22} color={colors.foreground} />}
+            label="About"
+            onPress={() => router.push("/about" as Href)}
             colors={colors}
           />
         </Card>

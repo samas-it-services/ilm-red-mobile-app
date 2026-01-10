@@ -1,29 +1,56 @@
 # ILM Red Mobile App
 
-A React Native mobile application for managing books and categories, built with Expo and connected to the ILM Red API backend.
+An AI-powered digital library mobile application for reading, managing, and chatting about books. Built with Expo and React Native, connected to the ILM Red API backend.
+
+**Version:** 1.1.0 | **Released:** 2026-01-10
+
+## Download
+
+| Platform | Link |
+|----------|------|
+| **Android APK** | [Download v1.1.0](https://expo.dev/artifacts/eas/biNeojeP7nzUCf3tM89tvn.apk) |
+| **Build Details** | [EAS Build Page](https://expo.dev/accounts/bilgrami/projects/ilm-red-mobile-app/builds/5377857b-7368-4371-9df9-2eb3088b7f03) |
 
 ## Features
 
+### Core Features
 - **Authentication** - Secure login/register with JWT tokens stored in SecureStore
 - **Book Library** - Browse, search, and filter books by category
 - **Book Upload** - Upload PDF/EPUB files directly from your device
-- **Categories** - 17 book categories with color-coded icons
+- **Page Reading** - Browse book pages with thumbnail grid and full-page reader
+- **PDF Viewer** - In-app PDF viewing for books without extracted pages
+- **AI Chat** - Have AI-powered conversations about book content (SSE streaming)
+- **Book Ratings** - Rate books 1-5 stars with optional reviews
 - **Favorites** - Save and manage your favorite books
+- **Global Search** - Search books by title, author, description with autocomplete
+
+### User Management
+- **Edit Profile** - Extended profile fields (name, location, DOB)
+- **Billing** - View AI credit balance and transaction history
 - **Dark Mode** - System-aware theme with manual toggle
-- **Profile** - User settings and account management
+- **About** - Company info and app version
+
+### Admin Panel (Admin users only)
+- **User Management** - List, search, edit, disable users
+- **Book Management** - View all books, trigger processing
+- **Book Processing** - Generate pages, thumbnails, AI embeddings
+- **Chat Sessions** - View and delete AI chat sessions
+- **Cache Management** - Redis stats, invalidation, flush
+- **System Statistics** - Dashboard with user/book/storage counts
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| Framework | Expo SDK 52 |
+| Framework | Expo SDK 54 |
 | Language | TypeScript |
-| Navigation | Expo Router |
-| Styling | NativeWind v4 (Tailwind CSS) |
-| State | React Query v5 |
-| Forms | React Hook Form + Zod |
-| Icons | Lucide React Native |
+| Navigation | expo-router v4 |
+| State | @tanstack/react-query v5 |
+| Animations | react-native-reanimated |
 | HTTP | Axios |
+| PDF Viewing | react-native-webview |
+| Icons | Lucide React Native |
+| Storage | expo-secure-store, AsyncStorage |
 
 ## Getting Started
 
@@ -84,50 +111,61 @@ npm run web
 ```
 ilm-red-mobile-app/
 ├── app/                           # Expo Router screens
-│   ├── (auth)/                    # Auth flow (login, register)
+│   ├── (auth)/                    # Auth flow (login, register, welcome)
 │   ├── (tabs)/                    # Main tab screens
-│   │   ├── index.tsx              # Library/Home
-│   │   ├── categories.tsx         # Browse categories
+│   │   ├── index.tsx              # Home with global search
+│   │   ├── library.tsx            # Library with filters
 │   │   ├── favorites.tsx          # Saved books
+│   │   ├── billing.tsx            # AI credits & transactions
 │   │   └── profile.tsx            # User profile
-│   ├── book/[id].tsx              # Book detail screen
-│   ├── upload.tsx                 # Upload book modal
+│   ├── admin/                     # Admin panel (admin users only)
+│   │   ├── index.tsx              # User management
+│   │   ├── books.tsx              # Book management
+│   │   ├── books/[id].tsx         # Book detail with actions
+│   │   ├── chats.tsx              # Chat sessions
+│   │   ├── chats/[id].tsx         # Chat detail
+│   │   ├── cache.tsx              # Redis management
+│   │   └── stats.tsx              # System statistics
+│   ├── book/
+│   │   ├── [id].tsx               # Book detail screen
+│   │   └── [id]/
+│   │       ├── read/[page].tsx    # Page reader
+│   │       ├── chat.tsx           # AI chat
+│   │       └── pdf.tsx            # PDF viewer
+│   ├── profile/
+│   │   └── edit.tsx               # Edit profile
+│   ├── about.tsx                  # About screen
 │   └── _layout.tsx                # Root layout with providers
 ├── components/
 │   ├── ui/                        # Reusable UI components
-│   │   ├── Button.tsx
-│   │   ├── Card.tsx
-│   │   ├── Input.tsx
-│   │   └── Loading.tsx
+│   ├── GlobalSearch.tsx           # Search bar with autocomplete
+│   ├── RatingModal.tsx            # Star rating component
 │   ├── BookCard.tsx               # Book card component
-│   ├── BookList.tsx               # Paginated book list
-│   ├── CategoryChip.tsx           # Category badge
-│   └── Header.tsx                 # Screen header
+│   └── BookList.tsx               # Paginated book list
 ├── hooks/                         # Custom React hooks
 │   ├── useAuth.ts                 # Auth hook
 │   ├── useBooks.ts                # Book queries & mutations
-│   ├── useCategories.ts           # Category utilities
-│   └── useUpload.ts               # Document picker
+│   ├── useAdmin.ts                # Admin operations
+│   ├── useSearch.ts               # Global search
+│   ├── useProfile.ts              # Profile updates
+│   └── useCategories.ts           # Category utilities
 ├── lib/                           # Core utilities
-│   ├── api.ts                     # Axios client with interceptors
-│   ├── auth.ts                    # Auth API functions
-│   └── storage.ts                 # SecureStore helpers
+│   └── api.ts                     # Axios client with interceptors
 ├── providers/                     # Context providers
 │   ├── AuthProvider.tsx           # Auth state management
 │   ├── QueryProvider.tsx          # React Query setup
 │   └── ThemeProvider.tsx          # Theme context
-├── constants/                     # App constants
-│   ├── colors.ts                  # Brand colors
-│   ├── categories.ts              # Category definitions
-│   └── config.ts                  # API configuration
 ├── types/
 │   └── api.ts                     # TypeScript API types
-└── assets/                        # Images & fonts
+├── docs/
+│   ├── PRD.md                     # Product Requirements
+│   └── TDD.md                     # Technical Design
+└── CHANGELOG.md                   # Version history
 ```
 
-## API Endpoints
+## API Integration
 
-The app connects to these ILM Red API endpoints:
+**Base URL:** `https://ilmred-prod-api.braverock-f357973c.westus2.azurecontainerapps.io`
 
 | Feature | Method | Endpoint |
 |---------|--------|----------|
@@ -135,13 +173,24 @@ The app connects to these ILM Red API endpoints:
 | Register | POST | `/v1/auth/register` |
 | Refresh Token | POST | `/v1/auth/refresh` |
 | Get Profile | GET | `/v1/users/me` |
+| Update Profile | PATCH | `/v1/users/me` |
 | List Books | GET | `/v1/books` |
 | Get Book | GET | `/v1/books/{id}` |
 | Upload Book | POST | `/v1/books` |
 | Delete Book | DELETE | `/v1/books/{id}` |
-| Get Favorites | GET | `/v1/books/me/favorites` |
+| Add Rating | POST | `/v1/books/{id}/ratings` |
+| Get Book Pages | GET | `/v1/books/{id}/pages` |
+| Download URL | GET | `/v1/books/{id}/download-url` |
 | Add Favorite | POST | `/v1/books/{id}/favorite` |
 | Remove Favorite | DELETE | `/v1/books/{id}/favorite` |
+| Search Books | GET | `/v1/search` |
+| Suggestions | GET | `/v1/search/suggestions` |
+| AI Chat | POST | `/v1/chat/{book_id}` |
+| Admin Users | GET | `/v1/admin/users` |
+| Admin Books | GET | `/v1/admin/books` |
+| Admin Stats | GET | `/v1/admin/stats` |
+
+See full API documentation at: https://ilmred-prod-api.braverock-f357973c.westus2.azurecontainerapps.io/docs
 
 ## Building for Production
 
@@ -179,6 +228,19 @@ The app uses the ILM Red brand colors from the website:
 | Primary | `#2563EB` | `#EF4444` |
 | Background | `#FFFFFF` | `#0F172A` |
 | Foreground | `#111111` | `#F8FAFC` |
+
+## Documentation
+
+- [Product Requirements (PRD)](./docs/PRD.md)
+- [Technical Design (TDD)](./docs/TDD.md)
+- [Changelog](./CHANGELOG.md)
+- [API Swagger Docs](https://ilmred-prod-api.braverock-f357973c.westus2.azurecontainerapps.io/docs)
+
+## About
+
+Developed by **saMas IT Services**
+- Location: Milpitas, California
+- Website: [samas.tech](https://samas.tech)
 
 ## License
 

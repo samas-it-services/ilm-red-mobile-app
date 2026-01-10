@@ -41,6 +41,7 @@ import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useInfiniteBooks, useFavorites, useToggleFavorite } from "@/hooks/useBooks";
 import { useCategories, type BookCategory } from "@/hooks/useCategories";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import type { BookListItem } from "@/types/api";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -488,18 +489,9 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <HeroSection user={user} colors={colors} />
 
-          {/* Search Bar */}
+          {/* Global Search */}
           <Animated.View entering={FadeInDown.delay(150).duration(500)}>
-            <TouchableOpacity
-              onPress={handleSearchPress}
-              style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}
-              activeOpacity={0.8}
-            >
-              <Search size={20} color={colors.muted} />
-              <Text style={[styles.searchPlaceholder, { color: colors.muted }]}>
-                Search books, authors...
-              </Text>
-            </TouchableOpacity>
+            <GlobalSearch placeholder="Search books, authors..." />
           </Animated.View>
         </View>
 

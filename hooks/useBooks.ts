@@ -15,6 +15,8 @@ import type {
   UpdateBookRequest,
   DownloadUrlResponse,
   SuccessMessage,
+  Rating,
+  CreateRatingRequest,
 } from "@/types/api";
 import { APP_CONFIG } from "@/constants/config";
 
@@ -30,6 +32,8 @@ export const bookKeys = {
   detail: (id: string) => [...bookKeys.details(), id] as const,
   favorites: () => [...bookKeys.all, "favorites"] as const,
   myBooks: () => [...bookKeys.all, "my-books"] as const,
+  ratings: (bookId: string) => [...bookKeys.detail(bookId), "ratings"] as const,
+  myRating: (bookId: string) => [...bookKeys.detail(bookId), "my-rating"] as const,
 };
 
 // ============================================================================
@@ -280,5 +284,78 @@ export function useBookDownloadUrl(bookId: string) {
     },
     enabled: false, // Only fetch when explicitly requested
     staleTime: 30 * 60 * 1000, // 30 minutes (URL expires in 1 hour)
+  });
+}
+
+// ============================================================================
+// Rating Hooks
+// ============================================================================
+
+/**
+ * Get ratings for a book
+ */
+export function useBookRatings(bookId: string) {
+  return useQuery({
+    queryKey: bookKeys.ratings(bookId),
+    queryFn: async () => {
+      const response = await api.get<Rating[]>(`/books/${bookId}/ratings`);
+      return response.data;
+    },
+    enabled: !!bookId,
+  });
+}
+
+/**
+ * Get current user's rating for a book
+ */
+export function useMyBookRating(bookId: string) {
+  return useQuery({
+    queryKey: bookKeys.myRating(bookId),
+    queryFn: async () => {
+      const response = await api.get<Rating | null>(`/books/${bookId}/ratings/me`);
+      return response.data;
+    },
+    enabled: !!bookId,
+    retry: false, // Don't retry on 404 (no rating)
+  });
+}
+
+/**
+ * Add or update rating for a book
+ */
+export function useAddRating(bookId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateRatingRequest) => {
+      const response = await api.post<Rating>(`/books/${bookId}/ratings`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalidate ratings and book detail to get updated average
+      queryClient.invalidateQueries({ queryKey: bookKeys.ratings(bookId) });
+      queryClient.invalidateQueries({ queryKey: bookKeys.myRating(bookId) });
+      queryClient.invalidateQueries({ queryKey: bookKeys.detail(bookId) });
+    },
+  });
+}
+
+/**
+ * Delete current user's rating for a book
+ */
+export function useDeleteRating(bookId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      await api.delete(`/books/${bookId}/ratings`);
+      return bookId;
+    },
+    onSuccess: () => {
+      // Invalidate ratings and book detail
+      queryClient.invalidateQueries({ queryKey: bookKeys.ratings(bookId) });
+      queryClient.invalidateQueries({ queryKey: bookKeys.myRating(bookId) });
+      queryClient.invalidateQueries({ queryKey: bookKeys.detail(bookId) });
+    },
   });
 }
