@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { X, Star } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
@@ -74,6 +75,7 @@ export function RatingModal({
       onClose();
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Error", "Failed to save rating. Please try again.");
     }
   };
 
@@ -85,6 +87,7 @@ export function RatingModal({
       onClose();
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Error", "Failed to delete rating. Please try again.");
     }
   };
 

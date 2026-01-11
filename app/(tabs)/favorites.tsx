@@ -1,7 +1,7 @@
 // Favorites Screen
 
 import React, { useCallback, useMemo } from "react";
-import { View, Text } from "react-native";
+import { View, Text, Alert } from "react-native";
 import { Heart } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -36,7 +36,11 @@ export default function FavoritesScreen() {
 
   const handleFavoritePress = useCallback(
     (bookId: string) => {
-      removeFavorite.mutate(bookId);
+      removeFavorite.mutate(bookId, {
+        onError: (error: any) => {
+          Alert.alert("Error", error.message || "Failed to remove from favorites");
+        },
+      });
     },
     [removeFavorite]
   );

@@ -259,11 +259,11 @@ export function useToggleFavorite() {
   const removeFavorite = useRemoveFavorite();
 
   return {
-    mutate: (bookId: string, isFavorite: boolean) => {
+    mutate: (bookId: string, isFavorite: boolean, options?: { onError?: (error: any) => void }) => {
       if (isFavorite) {
-        removeFavorite.mutate(bookId);
+        removeFavorite.mutate(bookId, { onError: options?.onError });
       } else {
-        addFavorite.mutate(bookId);
+        addFavorite.mutate(bookId, { onError: options?.onError });
       }
     },
     isPending: addFavorite.isPending || removeFavorite.isPending,

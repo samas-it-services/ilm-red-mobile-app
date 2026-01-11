@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Search, Plus, X, SlidersHorizontal } from "lucide-react-native";
@@ -81,7 +82,11 @@ export default function LibraryScreen() {
   const handleFavoritePress = useCallback(
     (bookId: string) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      toggleFavorite.mutate(bookId, favoriteIds.has(bookId));
+      toggleFavorite.mutate(bookId, favoriteIds.has(bookId), {
+        onError: (error: any) => {
+          Alert.alert("Error", error.message || "Failed to update favorites");
+        },
+      });
     },
     [toggleFavorite, favoriteIds]
   );

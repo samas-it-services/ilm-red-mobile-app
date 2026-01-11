@@ -10,6 +10,7 @@ import {
   Dimensions,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -218,7 +219,11 @@ export default function PagesScreen() {
 
   const handleGenerate = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    triggerGeneration.mutate(id!);
+    triggerGeneration.mutate(id!, {
+      onError: (error: any) => {
+        Alert.alert("Error", error.message || "Failed to generate pages. Please try again.");
+      },
+    });
   }, [id, triggerGeneration]);
 
   const handleRefresh = useCallback(() => {

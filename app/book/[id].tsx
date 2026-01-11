@@ -94,10 +94,18 @@ export default function BookDetailScreen() {
     try {
       const result = await fetchDownloadUrl();
       if (result.data?.url) {
-        await Linking.openURL(result.data.url);
+        const supported = await Linking.canOpenURL(result.data.url);
+        if (supported) {
+          await Linking.openURL(result.data.url);
+        } else {
+          Alert.alert("Error", "Cannot open download link on this device");
+        }
+      } else {
+        Alert.alert("Error", "No download URL available. The file may not exist.");
       }
-    } catch (err) {
-      Alert.alert("Error", "Failed to get download URL");
+    } catch (err: any) {
+      const message = err?.message || "Unknown error occurred";
+      Alert.alert("Download Failed", `Could not download file: ${message}`);
     }
   }, [fetchDownloadUrl]);
 
