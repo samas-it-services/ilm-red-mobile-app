@@ -33,12 +33,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Property name `page_count` in Book interface
 
 ### Changed
+- **MAJOR:** Replaced bottom tab bar with drawer navigation (hamburger menu)
+- Admin section now in collapsible drawer menu (for admin users only)
 - Profile screen now links to Edit Profile and About
 - Book detail shows context-aware reading options
-- Bottom navigation shows Admin tab for admin users
 - AuthProvider now exports `updateUser` function
 
 ### Technical
+- Added `components/DrawerContent.tsx` for custom drawer with admin hierarchy
+- Converted `app/(tabs)/_layout.tsx` from Tabs to Drawer navigation
+- Installed `@react-navigation/drawer` for drawer support
 - Added `hooks/useAdmin.ts` for admin operations
 - Added `hooks/useSearch.ts` for global search
 - Added `hooks/useProfile.ts` for profile updates

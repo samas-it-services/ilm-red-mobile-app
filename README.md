@@ -1,6 +1,15 @@
 # ILM Red Mobile App
 
-An AI-powered digital library mobile application for reading, managing, and chatting about books. Built with Expo and React Native, connected to the ILM Red API backend.
+[![Android Build](https://img.shields.io/badge/Android-Build_Passing-brightgreen?logo=android)](https://expo.dev/accounts/bilgrami/projects/ilm-red-mobile-app/builds)
+[![iOS Build](https://img.shields.io/badge/iOS-Pending-yellow?logo=apple)](https://expo.dev/accounts/bilgrami/projects/ilm-red-mobile-app/builds)
+[![App Version](https://img.shields.io/badge/Version-1.1.0-blue)](./package.json)
+[![API Version](https://img.shields.io/badge/API-v1.2.1-green)](https://ilmred-prod-api.braverock-f357973c.westus2.azurecontainerapps.io)
+[![React Native](https://img.shields.io/badge/React_Native-0.76-61DAFB?logo=react)](https://reactnative.dev)
+[![Expo SDK](https://img.shields.io/badge/Expo_SDK-54-000020?logo=expo)](https://expo.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![License](https://img.shields.io/badge/License-Private-red)](./LICENSE)
+
+**Read, Chat, Understand** — AI-powered digital library mobile app.
 
 **Version:** 1.1.0 | **Released:** 2026-01-10
 
