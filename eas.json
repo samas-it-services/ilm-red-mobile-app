@@ -11,7 +11,8 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
+        "EXPO_PUBLIC_API_URL": "https://ilmred-prod-api.braverock-f357973c.westus2.azurecontainerapps.io"
       },
       "android": {
         "buildType": "apk",
@@ -26,7 +27,8 @@
     "testflight": {
       "distribution": "store",
       "env": {
-        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
+        "EXPO_PUBLIC_API_URL": "https://ilmred-prod-api.braverock-f357973c.westus2.azurecontainerapps.io"
       },
       "android": {
         "buildType": "apk",
@@ -38,6 +40,9 @@
       }
     },
     "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://ilmred-prod-api.braverock-f357973c.westus2.azurecontainerapps.io"
+      },
       "android": {
         "credentialsSource": "remote"
       },

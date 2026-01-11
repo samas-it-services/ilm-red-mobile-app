@@ -1,103 +1,113 @@
-# Changelog
+# **Changelog**
 
-All notable changes to the ILM Red Mobile App will be documented in this file.
+All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [1.1.0] - 2026-01-10
-
-### Download
-- **APK Download:** [ilm-red-mobile-app-1.1.0.apk](https://expo.dev/artifacts/eas/biNeojeP7nzUCf3tM89tvn.apk)
-- **Build Page:** [EAS Build #5377857b](https://expo.dev/accounts/bilgrami/projects/ilm-red-mobile-app/builds/5377857b-7368-4371-9df9-2eb3088b7f03)
-
-### Added
-- Admin panel with user and book management
-- Edit profile screen with extended fields (extra_data JSON)
-- About screen with saMas IT Services company info
-- Global search with Redis-backed autocomplete
-- In-app PDF viewer for books without pages (WebView-based)
-- Conditional reading mode (pages vs PDF based on availability)
-- Book rating modal with 5-star interactive UI
-- Admin book processing (generate pages, thumbnails, AI)
-- Admin chat session management with message history
-- Admin Redis cache management screen
-- System statistics dashboard
-- Recent searches with AsyncStorage persistence
-
-### Fixed
-- Book download functionality on Android
-- Rating submission to API
-- TextInput components in registration and login forms
-- TypeScript errors with expo-router Href types
-- Property name `page_count` in Book interface
-
-### Changed
-- **MAJOR:** Replaced bottom tab bar with drawer navigation (hamburger menu)
-- Admin section now in collapsible drawer menu (for admin users only)
-- Profile screen now links to Edit Profile and About
-- Book detail shows context-aware reading options
-- AuthProvider now exports `updateUser` function
-
-### Technical
-- Added `components/DrawerContent.tsx` for custom drawer with admin hierarchy
-- Converted `app/(tabs)/_layout.tsx` from Tabs to Drawer navigation
-- Installed `@react-navigation/drawer` for drawer support
-- Added `hooks/useAdmin.ts` for admin operations
-- Added `hooks/useSearch.ts` for global search
-- Added `hooks/useProfile.ts` for profile updates
-- Added `components/GlobalSearch.tsx` with modal and autocomplete
-- Added `components/RatingModal.tsx` with star rating UI
-- Added `app/admin/` with 9 admin screens
-- Added `app/book/[id]/pdf.tsx` for PDF viewing
-- Added `app/profile/edit.tsx` for profile editing
-- Added `app/about.tsx` for company info
-- Installed `react-native-webview` for PDF viewing
-- Installed `@react-native-async-storage/async-storage` for search history
+## Format
+- **Reverse chronological order** (newest at top)
+- **Header format:** `YYYY-MM-DD | <category>: <title>`
+- **Categories:**
+  - 🚀 **feat**
+  - 🐛 **fix**
+  - 📘 **docs**
+  - 🧹 **chore**
+- **Sections included in every entry:**
+  - 📄 **Summary**
+  - 📁 **Files Changed**
+  - 🧠 **Rationale**
+  - 🔄 **Behavior / Compatibility Implications**
+  - 🧪 **Testing Recommendations**
+  - 📌 **Follow‑ups**
 
 ---
 
-## [1.0.0] - 2026-01-09
+## 2026-01-11 | 🐛 fix: Add API URL environment variable to EAS builds (v1.1.1)
 
-### Added
-- Beautiful landing page with animated floating books
-- Multi-step registration wizard with password strength indicator
-- Enhanced login screen with book illustrations
-- Book-focused home page with hero section and featured carousel
-- Library screen with search and category filters
-- Book detail page with cover, metadata, and actions
-- Pages browsing with thumbnail grid view
-- Full-page reader with swipe navigation
-- AI chat with Server-Sent Events (SSE) streaming
-- Billing screen with usage meters and transaction history
-- Favorites management
-- Dark/light theme support with system preference detection
-- Haptic feedback throughout the app
+### 📄 Summary
+Configure `EXPO_PUBLIC_API_URL` for all EAS build profiles (preview, testflight, production) to fix network error on login. The app was falling back to `localhost:8000` which doesn't work on physical Android devices.
 
-### Technical
-- Expo SDK 54 with TypeScript
-- expo-router v4 with nested layouts
-- @tanstack/react-query for data fetching
-- react-native-reanimated for animations
-- react-native-gesture-handler for swipe navigation
-- expo-linear-gradient for beautiful gradients
-- expo-haptics for tactile feedback
-- expo-image for optimized image loading
-- expo-secure-store for token storage
+### 📁 Files Changed
+- `eas.json` - Added `EXPO_PUBLIC_API_URL` env var to preview, testflight, and production profiles
+- `package.json` - Bumped version to 1.1.1
+- `CHANGELOG.md` - This entry
 
-### Security
-- JWT-based authentication
-- Secure token storage
-- HTTPS API communication
+### 🧠 Rationale
+The mobile app's `constants/config.ts` uses `process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000"` as the API base URL. When building with EAS, no environment variable was set, causing the APK to be built with `localhost:8000` as the API endpoint. This works in Expo Go (where Metro bundler proxies requests) but fails on standalone APKs installed on physical devices.
+
+### 🔄 Behavior / Compatibility Implications
+- No breaking changes
+- Existing users must update to the new APK build
+- Old APKs will continue to show network error until replaced
+
+### 🧪 Testing Recommendations
+1. Build new preview APK: `eas build --platform android --profile preview`
+2. Install on Android device
+3. Attempt login with valid credentials
+4. Verify successful authentication and navigation to home screen
+
+### 📌 Follow‑ups
+- None
 
 ---
 
-## Version History
+## 2026-01-10 | 🚀 feat: Admin panel, drawer navigation, and enhanced features (v1.1.0)
 
-| Version | Date | Description |
-|---------|------|-------------|
-| 1.1.0 | 2026-01-10 | Admin panel, search, profile, about, PDF reader |
-| 1.0.0 | 2026-01-09 | Initial MVP release |
+### 📄 Summary
+Major release adding admin panel with user/book management, drawer navigation replacing bottom tabs, global search with autocomplete, PDF viewer, profile editing, and numerous UI improvements.
+
+### 📁 Files Changed
+- `app/(tabs)/_layout.tsx` - Converted from Tabs to Drawer navigation
+- `components/DrawerContent.tsx` - New custom drawer with admin hierarchy
+- `app/admin/*` - 9 new admin screens (users, books, chats, cache, stats)
+- `app/book/[id]/pdf.tsx` - New PDF viewer screen
+- `app/profile/edit.tsx` - New profile editing screen
+- `app/about.tsx` - New about screen
+- `hooks/useAdmin.ts`, `hooks/useSearch.ts`, `hooks/useProfile.ts` - New hooks
+- `components/GlobalSearch.tsx`, `components/RatingModal.tsx` - New components
+
+### 🧠 Rationale
+Expand app functionality for power users and administrators while improving navigation UX with a drawer menu that can accommodate more menu items than bottom tabs.
+
+### 🔄 Behavior / Compatibility Implications
+- **BREAKING:** Navigation changed from bottom tabs to hamburger drawer menu
+- Admin features only visible to users with admin role
+
+### 🧪 Testing Recommendations
+1. Test drawer navigation on all screens
+2. Test admin panel with admin user account
+3. Test global search and autocomplete
+4. Test PDF viewer with books that have no extracted pages
+
+### 📌 Follow‑ups
+- Add pull-to-refresh on admin screens
+- Add batch operations for admin book processing
+
+---
+
+## 2026-01-09 | 🚀 feat: Initial MVP release (v1.0.0)
+
+### 📄 Summary
+Initial release of the ILM Red mobile app featuring book library, AI chat, page reading, user authentication, and billing management.
+
+### 📁 Files Changed
+- Complete codebase initial commit
+
+### 🧠 Rationale
+Launch MVP mobile app for the ILM Red digital library platform with core reading and AI features.
+
+### 🔄 Behavior / Compatibility Implications
+- Initial release, no backward compatibility concerns
+
+### 🧪 Testing Recommendations
+1. Test user registration and login
+2. Test book browsing and search
+3. Test page reading with swipe navigation
+4. Test AI chat with SSE streaming
+5. Test billing screen displays
+
+### 📌 Follow‑ups
+- Add admin panel
+- Add global search
+- Add PDF viewer for non-extracted books
 
 ---
 
