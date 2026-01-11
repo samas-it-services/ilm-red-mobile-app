@@ -7,7 +7,7 @@
 [![React Native](https://img.shields.io/badge/React_Native-0.76-61DAFB?logo=react)](https://reactnative.dev)
 [![Expo SDK](https://img.shields.io/badge/Expo_SDK-54-000020?logo=expo)](https://expo.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?logo=typescript)](https://www.typescriptlang.org)
-[![License](https://img.shields.io/badge/License-Private-red)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 **Read, Chat, Understand** — AI-powered digital library mobile app.
 
@@ -253,4 +253,4 @@ Developed by **saMas IT Services**
 
 ## License
 
-Private - ILM Red Project
+MIT - See [LICENSE](./LICENSE)
