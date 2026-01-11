@@ -72,7 +72,6 @@ export default function BookDetailScreen() {
   const isFavorite = favoritesData?.data.some((b) => b.id === id) ?? false;
   const isOwner = book?.owner.id === user?.id;
   const category = book ? getCategoryById(book.category) : null;
-  const hasPages = (book?.page_count ?? 0) > 0;
 
   // Handlers
   const handleBack = () => {
@@ -145,13 +144,21 @@ export default function BookDetailScreen() {
 
   const handleReadBook = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (hasPages) {
+    if (book?.file_type === 'pdf') {
+      // Always go to pages view for PDFs (pages will auto-generate if needed)
       router.push(`/book/${id}/pages`);
     } else {
-      // Open PDF viewer
-      router.push(`/book/${id}/pdf`);
+      // For non-PDF files, prompt to download
+      Alert.alert(
+        "Download Required",
+        `${book?.file_type?.toUpperCase()} files must be downloaded to read. Would you like to download?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Download", onPress: handleDownload }
+        ]
+      );
     }
-  }, [id, router, hasPages]);
+  }, [id, router, book?.file_type, handleDownload]);
 
   if (isLoading) {
     return <LoadingScreen message="Loading book details..." />;
@@ -430,13 +437,13 @@ export default function BookDetailScreen() {
                   borderColor: colors.border,
                 }}
               >
-                {hasPages ? (
+                {book?.file_type === 'pdf' ? (
                   <Grid3X3 size={20} color={colors.primary} />
                 ) : (
-                  <BookOpen size={20} color={colors.primary} />
+                  <Download size={20} color={colors.primary} />
                 )}
                 <Text style={{ fontSize: 15, fontWeight: "600", color: colors.foreground }}>
-                  {hasPages ? "Browse Pages" : "Read PDF"}
+                  {book?.file_type === 'pdf' ? "Browse Pages" : "Download to Read"}
                 </Text>
               </TouchableOpacity>
 
