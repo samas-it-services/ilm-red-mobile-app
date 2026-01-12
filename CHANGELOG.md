@@ -20,6 +20,38 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-01-12 | 🚀 feat: Rating flags infrastructure (v1.2.2)
+
+### 📄 Summary
+Add infrastructure for reporting inappropriate reviews. Users can flag reviews as spam, offensive, irrelevant, or other with optional details. Includes hooks and UI component ready for integration.
+
+### 📁 Files Changed
+- `hooks/useRatingFlags.ts` - NEW: React Query hook for flag API
+- `components/FlagRatingModal.tsx` - NEW: Modal for reporting reviews
+
+### 🧠 Rationale
+Community moderation requires users to report inappropriate content. Rating flags allow users to report spam, offensive language, or irrelevant reviews. Admin can then review and take action.
+
+### 🔄 Behavior / Compatibility Implications
+- Infrastructure ready but not yet integrated into UI
+- Requires review list component to show "Report" buttons
+- FlagRatingModal provides clean UI for selecting reason + details
+- API endpoint: POST /v1/books/{book_id}/ratings/{rating_id}/flag
+
+### 🧪 Testing Recommendations
+- Feature requires review list UI to be built first
+- Once integrated, tap "Report" on a review
+- Select reason (spam, offensive, irrelevant, other)
+- Add optional details
+- Submit and verify success message
+
+### 📌 Follow‑ups
+- Build review list component for book detail page
+- Add "Report" button to each review in the list
+- Integrate FlagRatingModal when user taps "Report"
+
+---
+
 ## 2026-01-12 | 🚀 feat: Personalized recommendations on home page (v1.2.1)
 
 ### 📄 Summary
