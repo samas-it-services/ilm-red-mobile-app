@@ -20,6 +20,37 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-01-12 | 🚀 feat: Personalized recommendations on home page (v1.2.1)
+
+### 📄 Summary
+Add personalized book recommendations section to home page. Recommendations are based on user's reading history, showing books in categories they've been reading, top-rated books, and trending content. Each recommendation includes a reason explaining why it was suggested.
+
+### 📁 Files Changed
+- `hooks/useRecommendations.ts` - NEW: React Query hooks for recommendations API
+- `app/(tabs)/index.tsx` - Add "Recommended for You" section on home page
+
+### 🧠 Rationale
+Users need personalized content discovery to find relevant books. Generic book lists don't help users discover books tailored to their interests. Recommendations improve engagement and help users find books they'll enjoy based on their reading patterns.
+
+### 🔄 Behavior / Compatibility Implications
+- New "Recommended for You" section appears on home page
+- Shows up to 5 recommended books in horizontal carousel
+- Each book shows reason badge (e.g., "Based on your interest in Fiqh")
+- Requires API endpoint: GET /v1/recommendations/for-you
+- Only shows when user has recommendations available
+
+### 🧪 Testing Recommendations
+- Open home page in Expo app
+- Scroll to "Recommended for You" section
+- Verify books shown match your reading interests
+- Tap a book to view details
+- Read books from recommended categories to improve future recommendations
+
+### 📌 Follow‑ups
+- None
+
+---
+
 ## 2026-01-12 | 🚀 feat: Real reading progress and streak tracking (v1.2.0)
 
 ### 📄 Summary

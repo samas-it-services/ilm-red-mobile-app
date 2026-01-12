@@ -42,6 +42,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { useInfiniteBooks, useFavorites, useToggleFavorite } from "@/hooks/useBooks";
 import { useCategories, type BookCategory } from "@/hooks/useCategories";
 import { useReadingStats, useRecentReads } from "@/hooks/useProgress";
+import { useRecommendations } from "@/hooks/useRecommendations";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import type { BookListItem } from "@/types/api";
 
@@ -426,6 +427,9 @@ export default function HomeScreen() {
   const { data: readingStats } = useReadingStats();
   const { data: recentReads } = useRecentReads(1);
 
+  // Recommendations
+  const { data: recommendations } = useRecommendations(10);
+
   // Memoized values
   const books = useMemo(
     () => data?.pages.flatMap((page) => page.data) ?? [],
@@ -559,6 +563,49 @@ export default function HomeScreen() {
             ))}
           </View>
         </View>
+
+        {/* Recommended for You */}
+        {recommendations && recommendations.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader
+              title="Recommended for You"
+              colors={colors}
+              onSeeAllPress={() => router.push("/(tabs)/library")}
+            />
+            <FlatList
+              horizontal
+              data={recommendations.slice(0, 5)}
+              keyExtractor={(item) => item.book_id}
+              renderItem={({ item, index }) => (
+                <Animated.View
+                  entering={FadeInRight.delay(index * 100).duration(400)}
+                >
+                  <BookCard
+                    book={{
+                      id: item.book_id,
+                      title: item.title,
+                      author: item.author,
+                      cover_url: item.cover_url,
+                      category: item.category,
+                      average_rating: item.average_rating,
+                      ratings_count: item.ratings_count,
+                    } as BookListItem}
+                    onPress={() => router.push(`/book/${item.book_id}`)}
+                    onFavoritePress={() => {}}
+                    isFavorite={favoriteIds.has(item.book_id)}
+                    colors={colors}
+                    width={CAROUSEL_ITEM_WIDTH}
+                    badge={item.reason}
+                  />
+                </Animated.View>
+              )}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.carousel}
+              snapToInterval={CAROUSEL_ITEM_WIDTH + 16}
+              decelerationRate="fast"
+            />
+          </View>
+        )}
 
         {/* Recently Added */}
         {recentBooks.length > 0 && (
