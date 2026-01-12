@@ -1,21 +1,23 @@
 // Book Categories with colors and icons
-// General digital library categories
+// Aligned with API backend (BOOK_CATEGORIES)
 
 export type BookCategory =
-  | "popular"
-  | "trending"
-  | "new"
-  | "classics"
-  | "academic"
+  | "quran"
+  | "hadith"
+  | "seerah"
+  | "fiqh"
+  | "aqidah"
+  | "tafsir"
+  | "history"
+  | "spirituality"
+  | "children"
   | "fiction"
   | "non-fiction"
+  | "education"
   | "science"
   | "technology"
-  | "business"
-  | "self-help"
   | "biography"
-  | "history"
-  | "children"
+  | "self-help"
   | "other";
 
 export interface CategoryInfo {
@@ -29,44 +31,76 @@ export interface CategoryInfo {
 
 export const CATEGORIES: CategoryInfo[] = [
   {
-    id: "popular",
-    label: "Popular",
-    icon: "flame",
-    color: "#EF4444", // Red-500
-    bgColor: "#FEE2E2", // Red-100
-    description: "Most read books this month",
-  },
-  {
-    id: "trending",
-    label: "Trending",
-    icon: "trending-up",
-    color: "#8B5CF6", // Violet-500
-    bgColor: "#EDE9FE", // Violet-100
-    description: "What's hot right now",
-  },
-  {
-    id: "new",
-    label: "New Releases",
-    icon: "sparkles",
+    id: "quran",
+    label: "Quran",
+    icon: "book-open",
     color: "#10B981", // Emerald-500
     bgColor: "#D1FAE5", // Emerald-100
-    description: "Recently added books",
+    description: "The Holy Quran and related works",
   },
   {
-    id: "classics",
-    label: "Classics",
-    icon: "book-open",
-    color: "#F59E0B", // Amber-500
-    bgColor: "#FEF3C7", // Amber-100
-    description: "Timeless literary works",
+    id: "hadith",
+    label: "Hadith",
+    icon: "scroll-text",
+    color: "#8B5CF6", // Violet-500
+    bgColor: "#EDE9FE", // Violet-100
+    description: "Prophetic traditions and sayings",
   },
   {
-    id: "academic",
-    label: "Academic",
-    icon: "graduation-cap",
+    id: "seerah",
+    label: "Seerah",
+    icon: "user-circle",
     color: "#3B82F6", // Blue-500
     bgColor: "#DBEAFE", // Blue-100
-    description: "Scholarly and research materials",
+    description: "Biography of Prophet Muhammad (PBUH)",
+  },
+  {
+    id: "fiqh",
+    label: "Fiqh",
+    icon: "scale",
+    color: "#F59E0B", // Amber-500
+    bgColor: "#FEF3C7", // Amber-100
+    description: "Islamic jurisprudence and law",
+  },
+  {
+    id: "aqidah",
+    label: "Aqidah",
+    icon: "heart",
+    color: "#EF4444", // Red-500
+    bgColor: "#FEE2E2", // Red-100
+    description: "Islamic theology and belief",
+  },
+  {
+    id: "tafsir",
+    label: "Tafsir",
+    icon: "book-open-check",
+    color: "#14B8A6", // Teal-500
+    bgColor: "#CCFBF1", // Teal-100
+    description: "Quranic exegesis and interpretation",
+  },
+  {
+    id: "history",
+    label: "History",
+    icon: "clock",
+    color: "#EA580C", // Orange-600
+    bgColor: "#FFEDD5", // Orange-100
+    description: "Historical events and Islamic history",
+  },
+  {
+    id: "spirituality",
+    label: "Spirituality",
+    icon: "sparkles",
+    color: "#A855F7", // Purple-500
+    bgColor: "#F3E8FF", // Purple-100
+    description: "Spiritual growth and development",
+  },
+  {
+    id: "children",
+    label: "Children",
+    icon: "baby",
+    color: "#E11D48", // Rose-600
+    bgColor: "#FFE4E6", // Rose-100
+    description: "Books for young readers",
   },
   {
     id: "fiction",
@@ -85,6 +119,14 @@ export const CATEGORIES: CategoryInfo[] = [
     description: "Facts, essays, and documentaries",
   },
   {
+    id: "education",
+    label: "Education",
+    icon: "graduation-cap",
+    color: "#0EA5E9", // Sky-500
+    bgColor: "#E0F2FE", // Sky-100
+    description: "Educational materials and textbooks",
+  },
+  {
     id: "science",
     label: "Science",
     icon: "flask-conical",
@@ -101,22 +143,6 @@ export const CATEGORIES: CategoryInfo[] = [
     description: "Tech, programming, and innovation",
   },
   {
-    id: "business",
-    label: "Business",
-    icon: "briefcase",
-    color: "#64748B", // Slate-500
-    bgColor: "#F1F5F9", // Slate-100
-    description: "Business, finance, and entrepreneurship",
-  },
-  {
-    id: "self-help",
-    label: "Self-Help",
-    icon: "heart",
-    color: "#22C55E", // Green-500
-    bgColor: "#DCFCE7", // Green-100
-    description: "Personal growth and development",
-  },
-  {
     id: "biography",
     label: "Biography",
     icon: "user",
@@ -125,20 +151,12 @@ export const CATEGORIES: CategoryInfo[] = [
     description: "Life stories and memoirs",
   },
   {
-    id: "history",
-    label: "History",
-    icon: "clock",
-    color: "#EA580C", // Orange-600
-    bgColor: "#FFEDD5", // Orange-100
-    description: "Historical events and periods",
-  },
-  {
-    id: "children",
-    label: "Children",
-    icon: "baby",
-    color: "#E11D48", // Rose-600
-    bgColor: "#FFE4E6", // Rose-100
-    description: "Books for young readers",
+    id: "self-help",
+    label: "Self-Help",
+    icon: "heart-handshake",
+    color: "#22C55E", // Green-500
+    bgColor: "#DCFCE7", // Green-100
+    description: "Personal growth and development",
   },
   {
     id: "other",

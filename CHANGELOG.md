@@ -20,6 +20,34 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-01-12 | 🐛 fix: Category filter alignment with API (v1.1.2)
+
+### 📄 Summary
+Fix category filter not working by aligning mobile app categories with API backend categories. Replace generic categories (popular, trending, new) with actual book categories from API including Islamic categories (quran, hadith, seerah, fiqh, aqidah, tafsir).
+
+### 📁 Files Changed
+- `constants/categories.ts` - Updated BookCategory type and CATEGORIES array to match API
+
+### 🧠 Rationale
+The library screen category filter was not working because the mobile app was sending category values (like "popular", "trending") that the API doesn't recognize. The API expects specific categories defined in the Book model including Islamic categories.
+
+### 🔄 Behavior / Compatibility Implications
+- Category filter in library screen now works correctly
+- Categories updated to include Islamic categories: Quran, Hadith, Seerah, Fiqh, Aqidah, Tafsir
+- Removed non-API categories: Popular, Trending, New Releases, Classics, Academic, Business
+- Kept common categories: History, Spirituality, Children, Fiction, Non-Fiction, Education, Science, Technology, Biography, Self-Help, Other
+
+### 🧪 Testing Recommendations
+- Open library screen in Expo app
+- Select different categories (Quran, Hadith, Fiction, etc.)
+- Verify books are filtered correctly
+- Verify "All" shows all books
+
+### 📌 Follow‑ups
+- None
+
+---
+
 ## 2026-01-11 | 🐛 fix: Add API URL environment variable to EAS builds (v1.1.1)
 
 ### 📄 Summary
