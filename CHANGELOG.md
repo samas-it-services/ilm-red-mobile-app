@@ -20,6 +20,42 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-01-12 | 🚀 feat: Real reading progress and streak tracking (v1.2.0)
+
+### 📄 Summary
+Replace hardcoded progress (35%) and streak (3 days) with real data from backend API. Progress updates automatically as users read pages, and reading streaks motivate daily reading.
+
+### 📁 Files Changed
+- `hooks/useProgress.ts` - NEW: React Query hooks for progress tracking
+- `app/book/[id]/read/[page].tsx` - Add debounced progress updates on page change
+- `app/(tabs)/index.tsx` - Use real progress and streak data from API
+- `app/(tabs)/index.tsx` - Update category gradients to match new categories
+
+### 🧠 Rationale
+Hardcoded progress and streak values provided no real value. With backend tracking:
+- Progress syncs across devices (iOS/Android/Web)
+- Streaks encourage daily reading habit
+- Reading time tracked per book
+- Resume reading from last page
+
+### 🔄 Behavior / Compatibility Implications
+- Progress now shows actual reading position (not hardcoded 35%)
+- Streak shows real consecutive reading days (not hardcoded 3)
+- Progress updates every 2 seconds after page change (debounced)
+- Requires authenticated user (progress tied to account)
+
+### 🧪 Testing Recommendations
+- Read a few pages, verify progress updates on home screen
+- Read on multiple devices, verify progress syncs
+- Read multiple days in a row, verify streak increases
+- Skip a day, verify streak resets
+
+### 📌 Follow‑ups
+- Add reading progress indicator to library book cards
+- Show reading time on book detail page
+
+---
+
 ## 2026-01-12 | 🐛 fix: Category filter alignment with API (v1.1.2)
 
 ### 📄 Summary

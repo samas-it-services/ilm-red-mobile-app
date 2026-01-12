@@ -49,6 +49,7 @@ import {
   useRefreshExpiredUrl,
 } from "@/hooks/usePages";
 import { useBook } from "@/hooks/useBooks";
+import { useUpdateProgress } from "@/hooks/useProgress";
 import { FEATURES } from "@/constants/config";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -181,9 +182,35 @@ export default function PageReaderScreen() {
   const { data: manifest } = usePageManifest(id!);
   const { data: pageData, isLoading, isError, refetch } = usePageImage(id!, pageNumber);
   const refreshExpiredUrl = useRefreshExpiredUrl();
+  const updateProgress = useUpdateProgress();
 
   // Prefetch adjacent pages
   usePrefetchPages(id!, pageNumber);
+
+  // Track reading progress (debounced)
+  const lastUpdateRef = useRef<number>(Date.now());
+  useEffect(() => {
+    if (!id || !pageNumber || !totalPages) return;
+
+    // Debounce progress updates (wait 2 seconds after page change)
+    const timer = setTimeout(() => {
+      const now = Date.now();
+      const timeSinceLastUpdate = Math.floor((now - lastUpdateRef.current) / 1000);
+
+      updateProgress.mutate({
+        bookId: id,
+        progress: {
+          current_page: pageNumber,
+          total_pages: totalPages,
+          reading_time_seconds: Math.min(timeSinceLastUpdate, 300), // Cap at 5 minutes
+        },
+      });
+
+      lastUpdateRef.current = now;
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [id, pageNumber, totalPages]);
 
   const totalPages = manifest?.total_pages ?? 0;
 

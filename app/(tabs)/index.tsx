@@ -41,6 +41,7 @@ import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useInfiniteBooks, useFavorites, useToggleFavorite } from "@/hooks/useBooks";
 import { useCategories, type BookCategory } from "@/hooks/useCategories";
+import { useReadingStats, useRecentReads } from "@/hooks/useProgress";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import type { BookListItem } from "@/types/api";
 
@@ -53,21 +54,23 @@ const CAROUSEL_ITEM_HEIGHT = CAROUSEL_ITEM_WIDTH * 1.4;
 // ============================================================================
 
 const CATEGORY_GRADIENTS: Record<string, [string, string]> = {
-  popular: ["#EF4444", "#DC2626"],
-  trending: ["#8B5CF6", "#7C3AED"],
-  new: ["#10B981", "#059669"],
-  classics: ["#F59E0B", "#D97706"],
-  academic: ["#3B82F6", "#2563EB"],
-  fiction: ["#EC4899", "#DB2777"],
-  "non-fiction": ["#6366F1", "#4F46E5"],
-  science: ["#14B8A6", "#0D9488"],
-  technology: ["#0EA5E9", "#0284C7"],
-  business: ["#64748B", "#475569"],
-  "self-help": ["#22C55E", "#16A34A"],
-  biography: ["#A855F7", "#9333EA"],
-  history: ["#EA580C", "#C2410C"],
-  children: ["#E11D48", "#BE123C"],
-  general: ["#64748B", "#475569"],
+  quran: ["#10B981", "#059669"],      // Emerald
+  hadith: ["#8B5CF6", "#7C3AED"],     // Violet
+  seerah: ["#3B82F6", "#2563EB"],     // Blue
+  fiqh: ["#F59E0B", "#D97706"],       // Amber
+  aqidah: ["#EF4444", "#DC2626"],     // Red
+  tafsir: ["#14B8A6", "#0D9488"],     // Teal
+  history: ["#EA580C", "#C2410C"],    // Orange
+  spirituality: ["#A855F7", "#9333EA"], // Purple
+  children: ["#E11D48", "#BE123C"],   // Rose
+  fiction: ["#EC4899", "#DB2777"],    // Pink
+  "non-fiction": ["#6366F1", "#4F46E5"], // Indigo
+  education: ["#0EA5E9", "#0284C7"],  // Sky
+  science: ["#14B8A6", "#0D9488"],    // Teal
+  technology: ["#0EA5E9", "#0284C7"], // Sky
+  biography: ["#A855F7", "#9333EA"],  // Purple
+  "self-help": ["#22C55E", "#16A34A"], // Green
+  other: ["#64748B", "#475569"],      // Slate
 };
 
 // ============================================================================
@@ -102,7 +105,7 @@ function HeroSection({ user, colors }: { user: any; colors: any }) {
       >
         <Flame size={20} color={colors.primary} />
         <Text style={[styles.streakText, { color: colors.primary }]}>
-          3 day streak
+          {readingStats?.current_streak_days || 0} day streak
         </Text>
       </TouchableOpacity>
     </Animated.View>
@@ -180,11 +183,16 @@ function ContinueReadingCard({
               <View
                 style={[
                   styles.progressFill,
-                  { backgroundColor: colors.primary, width: "35%" },
+                  {
+                    backgroundColor: colors.primary,
+                    width: `${recentReads?.[0]?.progress_percent || 0}%`
+                  },
                 ]}
               />
             </View>
-            <Text style={[styles.progressText, { color: colors.muted }]}>35%</Text>
+            <Text style={[styles.progressText, { color: colors.muted }]}>
+              {recentReads?.[0]?.progress_percent || 0}%
+            </Text>
           </View>
         </View>
         <ChevronRight size={24} color={colors.muted} />
@@ -413,6 +421,10 @@ export default function HomeScreen() {
 
   const { data: favoritesData } = useFavorites();
   const toggleFavorite = useToggleFavorite();
+
+  // Reading progress
+  const { data: readingStats } = useReadingStats();
+  const { data: recentReads } = useRecentReads(1);
 
   // Memoized values
   const books = useMemo(
