@@ -78,7 +78,7 @@ const CATEGORY_GRADIENTS: Record<string, [string, string]> = {
 // Hero Section Component
 // ============================================================================
 
-function HeroSection({ user, colors }: { user: any; colors: any }) {
+function HeroSection({ user, colors, readingStats }: { user: any; colors: any; readingStats?: any }) {
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -106,7 +106,9 @@ function HeroSection({ user, colors }: { user: any; colors: any }) {
       >
         <Flame size={20} color={colors.primary} />
         <Text style={[styles.streakText, { color: colors.primary }]}>
-          {readingStats?.current_streak_days || 0} day streak
+          {(readingStats?.current_streak_days !== undefined && readingStats?.current_streak_days !== null)
+            ? `${readingStats.current_streak_days} day streak`
+            : '0 day streak'}
         </Text>
       </TouchableOpacity>
     </Animated.View>
@@ -121,10 +123,12 @@ function ContinueReadingCard({
   book,
   colors,
   onPress,
+  progressPercent,
 }: {
   book: BookListItem | null;
   colors: any;
   onPress: () => void;
+  progressPercent?: number;
 }) {
   if (!book) {
     return (
@@ -186,13 +190,13 @@ function ContinueReadingCard({
                   styles.progressFill,
                   {
                     backgroundColor: colors.primary,
-                    width: `${recentReads?.[0]?.progress_percent || 0}%`
+                    width: `${(progressPercent !== undefined && progressPercent !== null) ? progressPercent : 0}%`
                   },
                 ]}
               />
             </View>
             <Text style={[styles.progressText, { color: colors.muted }]}>
-              {recentReads?.[0]?.progress_percent || 0}%
+              {(progressPercent !== undefined && progressPercent !== null) ? `${progressPercent}%` : '0%'}
             </Text>
           </View>
         </View>
@@ -503,7 +507,7 @@ export default function HomeScreen() {
       >
         {/* Header with Search */}
         <View style={styles.header}>
-          <HeroSection user={user} colors={colors} />
+          <HeroSection user={user} colors={colors} readingStats={readingStats} />
 
           {/* Global Search */}
           <Animated.View entering={FadeInDown.delay(150).duration(500)}>
@@ -517,6 +521,7 @@ export default function HomeScreen() {
             book={lastReadBook}
             colors={colors}
             onPress={() => lastReadBook && handleBookPress(lastReadBook.id)}
+            progressPercent={recentReads?.[0]?.progress_percent || 0}
           />
         </View>
 

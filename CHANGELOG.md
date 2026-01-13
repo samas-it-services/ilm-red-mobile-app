@@ -20,6 +20,35 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-01-12 | 🐛 fix: Resolve startup crash due to missing readingStats prop (v1.2.3)
+
+### 📄 Summary
+Fix critical startup crash caused by accessing readingStats property in HeroSection component before it was passed as a prop. The app was crashing with "Property 'readingStats' doesn't exist" error during startup.
+
+### 📁 Files Changed
+- `app/(tabs)/index.tsx` - Modified HeroSection and ContinueReadingCard components to properly receive readingStats and progressPercent as props
+
+### 🧠 Rationale
+The HeroSection component was attempting to access readingStats?.current_streak_days but the readingStats variable was defined in the parent component and not passed down as a prop. This caused a ReferenceError that crashed the app on startup. Similarly, the ContinueReadingCard component was accessing recentReads?.[0]?.progress_percent without receiving it as a prop.
+
+### 🔄 Behavior / Compatibility Implications
+- Fixes immediate crash on app startup
+- No breaking changes to functionality
+- Maintains all existing features and UI elements
+- Reading streak and progress indicators continue to work as expected
+
+### 🧪 Testing Recommendations
+- Launch the app and verify it no longer crashes on startup
+- Check that the reading streak badge displays correctly on the home screen
+- Verify that the progress percentage shows correctly in the "Continue Reading" card
+- Test the app on both development and production builds
+
+### 📌 Follow‑ups
+- Add TypeScript strict typing to prevent similar issues in the future
+- Implement additional error boundaries to catch component-level errors gracefully
+
+---
+
 ## 2026-01-12 | 🚀 feat: Rating flags infrastructure (v1.2.2)
 
 ### 📄 Summary
