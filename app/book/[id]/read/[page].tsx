@@ -184,6 +184,9 @@ export default function PageReaderScreen() {
   const refreshExpiredUrl = useRefreshExpiredUrl();
   const updateProgress = useUpdateProgress();
 
+  // Derived values
+  const totalPages = manifest?.total_pages ?? 0;
+
   // Prefetch adjacent pages
   usePrefetchPages(id!, pageNumber);
 
@@ -211,8 +214,6 @@ export default function PageReaderScreen() {
 
     return () => clearTimeout(timer);
   }, [id, pageNumber, totalPages]);
-
-  const totalPages = manifest?.total_pages ?? 0;
 
   // Auto-hide controls
   useEffect(() => {

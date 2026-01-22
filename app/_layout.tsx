@@ -9,11 +9,14 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/providers/AuthProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { ThemeProvider, useTheme } from "@/providers/ThemeProvider";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import "@/global.css";
 
 // Keep splash screen visible while loading
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Splash screen might already be hidden or unavailable
+});
 
 // ============================================================================
 // Auth Guard Component
@@ -51,7 +54,9 @@ function RootNavigation() {
 
   useEffect(() => {
     if (!isLoading) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {
+        // Splash screen might already be hidden
+      });
     }
   }, [isLoading]);
 
@@ -112,14 +117,16 @@ function RootNavigation() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <QueryProvider>
-        <ThemeProvider>
-          <AuthProvider>
-            <RootNavigation />
-          </AuthProvider>
-        </ThemeProvider>
-      </QueryProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <RootNavigation />
+            </AuthProvider>
+          </ThemeProvider>
+        </QueryProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

@@ -20,6 +20,43 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-01-21 | 🐛 fix: Crash protection and comprehensive error handling (v1.2.4)
+
+### 📄 Summary
+Fix startup crash caused by missing component reference and add comprehensive error handling throughout the app. Includes ErrorBoundary component, null safety improvements, and reusable error utilities.
+
+### 📁 Files Changed
+- `app/_layout.tsx` - Wrap app with ErrorBoundary, add try-catch for SplashScreen
+- `app/(tabs)/index.tsx` - Add RecommendationCard component, fix missing styles, add onError to mutations
+- `app/book/[id].tsx` - Add null safety for owner, stats, and file_type properties
+- `app/book/[id]/read/[page].tsx` - Fix totalPages variable hoisting issue
+- `hooks/useChat.ts` - Add error handling for JSON parsing and array operations
+- `components/ErrorBoundary.tsx` - NEW: Error boundary components for crash protection
+- `lib/errorUtils.ts` - NEW: Reusable error handling utilities
+
+### 🧠 Rationale
+The app was crashing on startup due to a missing `BookCard` component reference in the home screen. Investigation revealed multiple potential crash points including unsafe property access, unhandled async errors, and missing null checks. Added comprehensive error handling to make the app resilient to failures.
+
+### 🔄 Behavior / Compatibility Implications
+- App no longer crashes on startup
+- Unhandled errors are caught by ErrorBoundary and show user-friendly error screen
+- Failed favorite toggles now show haptic error feedback
+- No breaking changes to existing functionality
+
+### 🧪 Testing Recommendations
+- Launch app and verify no crash on startup
+- Navigate through all screens to verify ErrorBoundary doesn't interfere
+- Toggle favorites and verify error feedback on failure
+- Test book detail screen with books that have missing owner/stats data
+- Test page reader to verify progress tracking works
+
+### 📌 Follow-ups
+- Add error reporting to external service (Sentry, etc.)
+- Add retry logic for failed API requests
+- Add offline error handling
+
+---
+
 ## 2026-01-12 | 🐛 fix: Resolve startup crash due to missing readingStats prop (v1.2.3)
 
 ### 📄 Summary

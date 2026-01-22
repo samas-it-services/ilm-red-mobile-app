@@ -24,6 +24,7 @@ import {
   Flame,
   Star,
   TrendingUp,
+  Heart,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -365,6 +366,95 @@ function RecentBookCard({
 }
 
 // ============================================================================
+// Recommendation Card Component
+// ============================================================================
+
+function RecommendationCard({
+  book,
+  colors,
+  onPress,
+  onFavoritePress,
+  isFavorite,
+  width,
+  badge,
+}: {
+  book: {
+    book_id: string;
+    title: string;
+    author: string | null;
+    cover_url: string | null;
+    category: string;
+  };
+  colors: any;
+  onPress: () => void;
+  onFavoritePress: () => void;
+  isFavorite: boolean;
+  width: number;
+  badge?: string;
+}) {
+  const gradient = CATEGORY_GRADIENTS[book.category] || CATEGORY_GRADIENTS.other;
+
+  return (
+    <TouchableOpacity
+      style={[styles.recommendationCard, { width }]}
+      onPress={onPress}
+      activeOpacity={0.9}
+    >
+      {book.cover_url ? (
+        <Image
+          source={{ uri: book.cover_url }}
+          style={[styles.recommendationCover, { width }]}
+        />
+      ) : (
+        <LinearGradient
+          colors={gradient}
+          style={[styles.recommendationCover, { width }]}
+        >
+          <BookOpen size={40} color="#FFF" style={{ opacity: 0.8 }} />
+        </LinearGradient>
+      )}
+      {/* Favorite Button */}
+      <TouchableOpacity
+        style={[styles.recommendationFavorite, { backgroundColor: colors.background }]}
+        onPress={(e) => {
+          e.stopPropagation();
+          onFavoritePress();
+        }}
+      >
+        <Heart
+          size={16}
+          color={isFavorite ? colors.destructive : colors.muted}
+          fill={isFavorite ? colors.destructive : "transparent"}
+        />
+      </TouchableOpacity>
+      {/* Badge */}
+      {badge && (
+        <View style={[styles.recommendationBadge, { backgroundColor: colors.primary }]}>
+          <Text style={styles.recommendationBadgeText}>{badge}</Text>
+        </View>
+      )}
+      {/* Content */}
+      <View style={styles.recommendationContent}>
+        <Text
+          style={[styles.recommendationTitle, { color: colors.foreground }]}
+          numberOfLines={2}
+        >
+          {book.title}
+        </Text>
+        {book.author && (
+          <Text
+            style={[styles.recommendationAuthor, { color: colors.muted }]}
+            numberOfLines={1}
+          >
+            {book.author}
+          </Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ============================================================================
 // Section Header Component
 // ============================================================================
 
@@ -445,7 +535,7 @@ export default function HomeScreen() {
   const lastReadBook = useMemo(() => books[0] || null, [books]);
 
   const favoriteIds = useMemo(
-    () => new Set(favoritesData?.data.map((b) => b.id) ?? []),
+    () => new Set(favoritesData?.data?.map((b) => b.id) ?? []),
     [favoritesData]
   );
 
@@ -475,7 +565,13 @@ export default function HomeScreen() {
   const handleFavoritePress = useCallback(
     (bookId: string) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      toggleFavorite.mutate(bookId, favoriteIds.has(bookId));
+      toggleFavorite.mutate(bookId, favoriteIds.has(bookId), {
+        onError: (error) => {
+          console.error("Failed to toggle favorite:", error);
+          // Haptic feedback for error
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        },
+      });
     },
     [toggleFavorite, favoriteIds]
   );
@@ -585,28 +681,20 @@ export default function HomeScreen() {
                 <Animated.View
                   entering={FadeInRight.delay(index * 100).duration(400)}
                 >
-                  <BookCard
-                    book={{
-                      id: item.book_id,
-                      title: item.title,
-                      author: item.author,
-                      cover_url: item.cover_url,
-                      category: item.category,
-                      average_rating: item.average_rating,
-                      ratings_count: item.ratings_count,
-                    } as BookListItem}
+                  <RecommendationCard
+                    book={item}
                     onPress={() => router.push(`/book/${item.book_id}`)}
-                    onFavoritePress={() => {}}
+                    onFavoritePress={() => handleFavoritePress(item.book_id)}
                     isFavorite={favoriteIds.has(item.book_id)}
                     colors={colors}
-                    width={CAROUSEL_ITEM_WIDTH}
+                    width={CAROUSEL_ITEM_WIDTH * 0.6}
                     badge={item.reason}
                   />
                 </Animated.View>
               )}
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.carousel}
-              snapToInterval={CAROUSEL_ITEM_WIDTH + 16}
+              contentContainerStyle={styles.carouselContainer}
+              snapToInterval={CAROUSEL_ITEM_WIDTH * 0.6 + 16}
               decelerationRate="fast"
             />
           </View>
@@ -923,6 +1011,59 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   recentPages: {
+    fontSize: 12,
+  },
+  // Recommendation Card
+  recommendationCard: {
+    borderRadius: 12,
+    overflow: "hidden",
+    marginRight: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  recommendationCover: {
+    height: 180,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  recommendationFavorite: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    borderRadius: 16,
+    padding: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  recommendationBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  recommendationBadgeText: {
+    color: "#FFF",
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "capitalize",
+  },
+  recommendationContent: {
+    padding: 12,
+  },
+  recommendationTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  recommendationAuthor: {
     fontSize: 12,
   },
   // FAB

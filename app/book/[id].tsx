@@ -69,8 +69,8 @@ export default function BookDetailScreen() {
   const addFavorite = useAddFavorite();
   const removeFavorite = useRemoveFavorite();
 
-  const isFavorite = favoritesData?.data.some((b) => b.id === id) ?? false;
-  const isOwner = book?.owner.id === user?.id;
+  const isFavorite = favoritesData?.data?.some((b) => b.id === id) ?? false;
+  const isOwner = book?.owner?.id === user?.id;
   const category = book ? getCategoryById(book.category) : null;
 
   // Handlers
@@ -343,24 +343,24 @@ export default function BookDetailScreen() {
           >
             <StatItem
               icon={<Eye size={16} color={colors.muted} />}
-              label={`${book.stats.views} views`}
+              label={`${book.stats?.views ?? 0} views`}
               colors={colors}
             />
             <StatItem
               icon={<Download size={16} color={colors.muted} />}
-              label={`${book.stats.downloads} downloads`}
+              label={`${book.stats?.downloads ?? 0} downloads`}
               colors={colors}
             />
-            {book.stats.rating_avg !== null && (
+            {book.stats?.rating_avg != null && (
               <StatItem
                 icon={<Star size={16} color="#F59E0B" />}
-                label={`${book.stats.rating_avg.toFixed(1)} (${book.stats.rating_count})`}
+                label={`${book.stats.rating_avg.toFixed(1)} (${book.stats?.rating_count ?? 0})`}
                 colors={colors}
               />
             )}
             <StatItem
               icon={<FileText size={16} color={colors.muted} />}
-              label={`${book.file_type.toUpperCase()} - ${formatFileSize(book.file_size)}`}
+              label={`${book.file_type?.toUpperCase() ?? "FILE"} - ${formatFileSize(book.file_size ?? 0)}`}
               colors={colors}
             />
           </View>
@@ -413,15 +413,15 @@ export default function BookDetailScreen() {
               }}
             >
               <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>
-                {book.owner.display_name.charAt(0).toUpperCase()}
+                {(book.owner?.display_name ?? "U").charAt(0).toUpperCase()}
               </Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>
-                {book.owner.display_name}
+                {book.owner?.display_name ?? "Unknown"}
               </Text>
               <Text style={{ fontSize: 12, color: colors.muted }}>
-                @{book.owner.username}
+                @{book.owner?.username ?? "unknown"}
               </Text>
             </View>
           </View>

@@ -238,12 +238,12 @@ export function useStreamMessage(sessionId: string) {
         queryClient.setQueryData(
           chatKeys.messages(sessionId),
           (old: any) => {
-            if (!old) return old;
+            if (!old?.pages) return old;
             return {
               ...old,
               pages: old.pages.map((page: any, idx: number) =>
                 idx === 0
-                  ? { ...page, data: [optimisticUserMessage, ...page.data] }
+                  ? { ...page, data: [optimisticUserMessage, ...(page.data ?? [])] }
                   : page
               ),
             };
@@ -272,8 +272,14 @@ export function useStreamMessage(sessionId: string) {
         );
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error?.message || "Failed to send message");
+          let errorMessage = "Failed to send message";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData?.error?.message || errorMessage;
+          } catch {
+            // JSON parsing failed, use default message
+          }
+          throw new Error(errorMessage);
         }
 
         // Process SSE stream
@@ -330,12 +336,12 @@ export function useStreamMessage(sessionId: string) {
                 queryClient.setQueryData(
                   chatKeys.messages(sessionId),
                   (old: any) => {
-                    if (!old) return old;
+                    if (!old?.pages) return old;
                     return {
                       ...old,
                       pages: old.pages.map((page: any, idx: number) =>
                         idx === 0
-                          ? { ...page, data: [assistantMessage, ...page.data] }
+                          ? { ...page, data: [assistantMessage, ...(page.data ?? [])] }
                           : page
                       ),
                     };
@@ -444,9 +450,15 @@ export function useChat(bookId: string, sessionId?: string) {
   // Send message wrapper
   const sendMessage = useCallback(
     async (content: string) => {
-      const sid = await getOrCreateSession();
-      if (!sid) return;
-      streaming.sendMessage(content);
+      try {
+        const sid = await getOrCreateSession();
+        if (!sid) return;
+        streaming.sendMessage(content);
+      } catch (error: any) {
+        // Handle session creation errors
+        console.error("Failed to get or create chat session:", error);
+        // The streaming hook will handle displaying the error
+      }
     },
     [getOrCreateSession, streaming]
   );
