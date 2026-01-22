@@ -67,6 +67,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiError>) => {
+    // Diagnostic logging for debugging network issues
+    console.error("API Error Details:", {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      url: error.config?.url,
+      baseURL: error.config?.baseURL,
+      responseData: error.response?.data,
+    });
+
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };

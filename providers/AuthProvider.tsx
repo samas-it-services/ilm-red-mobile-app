@@ -90,6 +90,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const loggedInUser = await authLogin(credentials);
       setUser(loggedInUser);
       router.replace("/(tabs)");
+    } catch (error) {
+      // Rethrow error so caller can handle and display to user
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -101,6 +104,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const newUser = await authRegister(data);
       setUser(newUser);
       router.replace("/(tabs)");
+    } catch (error) {
+      // Rethrow error so caller can handle and display to user
+      throw error;
     } finally {
       setIsLoading(false);
     }

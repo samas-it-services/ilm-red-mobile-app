@@ -20,6 +20,38 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-01-21 | 🐛 fix: Home screen crash and login error handling (v1.2.5)
+
+### 📄 Summary
+Fix home screen crash after login caused by undefined gradient colors, and improve error handling throughout the app. Added diagnostic logging and local build script for easier debugging.
+
+### 📁 Files Changed
+- `app/(tabs)/index.tsx` - Fix CATEGORY_GRADIENTS fallback from non-existent `.general` to `.other`
+- `lib/api.ts` - Add diagnostic logging to API error interceptor
+- `providers/AuthProvider.tsx` - Add catch blocks to rethrow login/register errors
+- `package.json` - Bump version to 1.2.5, update Expo packages
+- `scripts/local-build.sh` - NEW: Local build and test script
+
+### 🧠 Rationale
+The home screen was crashing with "Cannot read property 'map' of undefined" because `LinearGradient` received `undefined` for its `colors` prop. The code fell back to `CATEGORY_GRADIENTS.general` which doesn't exist. Additionally, login errors weren't propagating to the UI due to missing catch blocks in AuthProvider.
+
+### 🔄 Behavior / Compatibility Implications
+- Home screen no longer crashes after login
+- Login errors now display to user instead of being swallowed
+- API errors are logged with detailed diagnostic info in dev mode
+- New `./scripts/local-build.sh` script for local testing
+
+### 🧪 Testing Recommendations
+- Run `./scripts/local-build.sh test-api` to test with production API
+- Login and verify home screen displays without errors
+- Check Metro logs for any remaining API errors
+- Test login with invalid credentials to verify error message appears
+
+### 📌 Follow-ups
+- None
+
+---
+
 ## 2026-01-21 | 🐛 fix: Crash protection and comprehensive error handling (v1.2.4)
 
 ### 📄 Summary

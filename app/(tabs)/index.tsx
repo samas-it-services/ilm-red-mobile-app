@@ -222,7 +222,7 @@ function FeaturedBookCard({
   onPress: () => void;
   index: number;
 }) {
-  const gradient = CATEGORY_GRADIENTS[book.category] || CATEGORY_GRADIENTS.general;
+  const gradient = CATEGORY_GRADIENTS[book.category] || CATEGORY_GRADIENTS.other;
 
   return (
     <Animated.View entering={FadeInRight.delay(index * 100).duration(400)}>
@@ -285,7 +285,7 @@ function CategoryCard({
   onPress: () => void;
   index: number;
 }) {
-  const gradient = CATEGORY_GRADIENTS[category.id] || CATEGORY_GRADIENTS.general;
+  const gradient = CATEGORY_GRADIENTS[category.id] || CATEGORY_GRADIENTS.other;
 
   return (
     <Animated.View entering={FadeInDown.delay(200 + index * 50).duration(400)}>
