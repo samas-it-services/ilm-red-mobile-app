@@ -1,4 +1,8 @@
 // Authentication Context Provider
+//
+// The session lives in Supabase Auth (lib/supabase.ts), the same accounts as ilm.red. Who the
+// member is comes from api.ilm.red (GET /v1/me + /v1/me/entitlements). Screens keep using
+// useAuth(): user, isAuthenticated, logout, refreshUser, updateUser, plus the two sign-in actions.
 
 import React, {
   createContext,
@@ -9,115 +13,79 @@ import React, {
   ReactNode,
 } from "react";
 import { router } from "expo-router";
-import type { User, LoginRequest, RegisterRequest } from "@/types/api";
+import type { User } from "@/types/api";
+import { supabase } from "@/lib/supabase";
 import {
-  login as authLogin,
-  register as authRegister,
-  logout as authLogout,
+  signInWithGoogle as authGoogle,
+  signInWithApple as authApple,
+  signOut as authSignOut,
   fetchCurrentUser,
 } from "@/lib/auth";
-import { getAccessToken, getStoredUser, clearAuthData } from "@/lib/storage";
-
-// ============================================================================
-// Types
-// ============================================================================
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: LoginRequest) => Promise<void>;
-  register: (data: RegisterRequest) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateUser: (user: User) => void;
 }
 
-// ============================================================================
-// Context
-// ============================================================================
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ============================================================================
-// Provider
-// ============================================================================
-
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export function AuthProvider({ children }: AuthProviderProps) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize auth state on mount
+  const loadUser = useCallback(async () => {
+    try {
+      setUser(await fetchCurrentUser());
+    } catch (error) {
+      // Signed in to Supabase but the API refused the token (expired, account removed): start over.
+      console.error("Failed to load the signed-in member:", error);
+      await supabase.auth.signOut();
+      setUser(null);
+    }
+  }, []);
+
   useEffect(() => {
-    initializeAuth();
-  }, []);
+    let alive = true;
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (data.session) await loadUser();
+      if (alive) setIsLoading(false);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) setUser(null);
+      else if (event === "SIGNED_IN") void loadUser();
+    });
+    return () => {
+      alive = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [loadUser]);
 
-  const initializeAuth = async () => {
-    try {
-      const token = await getAccessToken();
-      if (token) {
-        // Try to get stored user first for faster UI
-        const storedUser = await getStoredUser();
-        if (storedUser) {
-          setUser(storedUser);
-        }
-
-        // Then refresh from server
-        try {
-          const freshUser = await fetchCurrentUser();
-          setUser(freshUser);
-        } catch (error) {
-          // Token might be invalid, clear auth
-          console.error("Failed to fetch user:", error);
-          await clearAuthData();
-          setUser(null);
-        }
-      }
-    } catch (error) {
-      console.error("Auth initialization error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const login = useCallback(async (credentials: LoginRequest) => {
+  const run = useCallback(async (signIn: () => Promise<void>) => {
     setIsLoading(true);
     try {
-      const loggedInUser = await authLogin(credentials);
-      setUser(loggedInUser);
+      await signIn();
+      await loadUser();
       router.replace("/(tabs)");
-    } catch (error) {
-      // Rethrow error so caller can handle and display to user
-      throw error;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [loadUser]);
 
-  const register = useCallback(async (data: RegisterRequest) => {
-    setIsLoading(true);
-    try {
-      const newUser = await authRegister(data);
-      setUser(newUser);
-      router.replace("/(tabs)");
-    } catch (error) {
-      // Rethrow error so caller can handle and display to user
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const signInWithGoogle = useCallback(() => run(authGoogle), [run]);
+  const signInWithApple = useCallback(() => run(authApple), [run]);
 
   const logout = useCallback(async () => {
     setIsLoading(true);
     try {
-      await authLogout();
+      await authSignOut();
       setUser(null);
-      router.replace("/(auth)/login");
+      router.replace("/(auth)/welcome");
     } finally {
       setIsLoading(false);
     }
@@ -125,23 +93,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const freshUser = await fetchCurrentUser();
-      setUser(freshUser);
+      setUser(await fetchCurrentUser());
     } catch (error) {
       console.error("Failed to refresh user:", error);
     }
   }, []);
 
-  const updateUser = useCallback((updatedUser: User) => {
-    setUser(updatedUser);
-  }, []);
+  const updateUser = useCallback((updated: User) => setUser(updated), []);
 
   const value: AuthContextType = {
     user,
     isLoading,
     isAuthenticated: !!user,
-    login,
-    register,
+    signInWithGoogle,
+    signInWithApple,
     logout,
     refreshUser,
     updateUser,
@@ -149,10 +114,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-
-// ============================================================================
-// Hook
-// ============================================================================
 
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);

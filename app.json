@@ -15,7 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ilmred.app"
+      "bundleIdentifier": "com.ilmred.app",
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -44,7 +45,9 @@
         {
           "photosPermission": "Allow ILM Red to access your photos to upload book covers."
         }
-      ]
+      ],
+      "expo-web-browser",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true

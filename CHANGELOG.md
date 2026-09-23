@@ -20,6 +20,36 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-09-22 | 🚀 feat: Sign in with Google and Apple, same accounts as ilm.red (v1.3.0)
+
+### 📄 Summary
+The app now signs in exactly like the website: Supabase Auth with Google on every device and Sign in with Apple on iPhone. Who you are comes from api.ilm.red (`GET /v1/me` and `/v1/me/entitlements`) through the typed client shared with the website. The old email and password screens are gone; they talked to the retired Azure API.
+
+### 📁 Files Changed
+- `lib/supabase.ts` (new) - Supabase client for sign-in only; session kept in AsyncStorage, refreshed while the app is open
+- `lib/auth.ts` - Google through the system browser (PKCE, returns to `ilmred://auth-callback`), Apple through the native sheet on iOS; member loaded from the API
+- `lib/ilmApi.ts` (new), `lib/api-client/` (copied from ilm-red-unbound, do not edit here) - typed api.ilm.red client
+- `providers/AuthProvider.tsx` - session from Supabase; `signInWithGoogle` and `signInWithApple` replace `login` and `register`
+- `app/(auth)/login.tsx` - new sign-in screen; `register.tsx` now forwards to it; welcome's "Get Started" goes to sign-in
+- `constants/config.ts` - Supabase and API addresses
+- `app.json`, `package.json` - expo-apple-authentication, expo-web-browser, @supabase/supabase-js, react-native-url-polyfill
+
+### 🧠 Rationale
+API-first: one sign-in and one API for web, mobile and partners. Apple requires Sign in with Apple in any iPhone app that offers Google.
+
+### 🔄 Behavior / Compatibility Implications
+- Everyone signs in again once. Existing ilm.red accounts work as they are.
+- Other screens still call the old Azure API and stay broken until each moves to api.ilm.red.
+- Needs the Supabase and Apple setup in ilm-red-unbound `docs/kb/apple-sign-in.md` (redirect URLs and the Apple provider) and a new build, since native modules were added.
+
+### 🧪 Testing Recommendations
+- Google sign-in on Android and iPhone; Apple sign-in on iPhone; sign out and back in; close and reopen the app and stay signed in.
+
+### 📌 Follow‑ups
+- Move books, library and reader onto api.ilm.red (ilm-red-unbound v1.374+).
+
+---
+
 ## 2026-01-21 | 🐛 fix: Home screen crash and login error handling (v1.2.5)
 
 ### 📄 Summary
