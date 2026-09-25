@@ -17,8 +17,12 @@ import {
   Edit3,
   Info,
   ShieldCheck,
+  KeyRound,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as WebBrowser from "expo-web-browser";
+
+import { ILM_WEB_URL } from "@/constants/config";
 
 import { useAuth } from "@/providers/AuthProvider";
 import { useTheme } from "@/providers/ThemeProvider";
@@ -240,6 +244,15 @@ export default function ProfileScreen() {
             icon={<HelpCircle size={22} color={colors.foreground} />}
             label="Help & Support"
             onPress={() => {}}
+            colors={colors}
+          />
+          <View style={{ height: 1, backgroundColor: colors.border }} />
+          {/* The API keys page lives on the website: making a key means accepting the API terms and
+              the billing agreement, and the secret is shown once, so it stays in one place. */}
+          <SettingsItem
+            icon={<KeyRound size={22} color={colors.foreground} />}
+            label="Developers & API keys"
+            onPress={() => WebBrowser.openBrowserAsync(`${ILM_WEB_URL}/developers/keys`)}
             colors={colors}
           />
           <View style={{ height: 1, backgroundColor: colors.border }} />

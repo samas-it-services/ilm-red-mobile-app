@@ -10,7 +10,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator, Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { CreditCard, ExternalLink, Receipt, Wallet, AlertCircle } from "lucide-react-native";
+import { CreditCard, ExternalLink, KeyRound, Receipt, Wallet, AlertCircle } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
@@ -20,12 +20,13 @@ import type { ThemeColors } from "@/constants/colors";
 import { ILM_WEB_URL } from "@/constants/config";
 import {
   dollars, formatDollars, topUpStatusLabel,
-  useCreditAccount, useMyPaymentReceipt, useMyPayments, useMyTopUps, usePaymentMethods, useRefreshBilling,
-  type CreditAccount, type MyPayment, type TopUp,
+  useCreditAccount, useMyApiKeys, useMyPaymentReceipt, useMyPayments, useMyTopUps, usePaymentMethods, useRefreshBilling,
+  type CreditAccount, type MyApiKey, type MyPayment, type TopUp,
 } from "@/hooks/useBilling";
 import { ZelleTopUp } from "@/components/billing/ZelleTopUp";
 
 const openWebBilling = () => WebBrowser.openBrowserAsync(`${ILM_WEB_URL}/premium`);
+const openWebKeys = () => WebBrowser.openBrowserAsync(`${ILM_WEB_URL}/developers/keys`);
 
 function BalanceCard({ account, colors }: { account: CreditAccount; colors: ThemeColors }) {
   const pctLeft = account.monthlyLimit > 0 ? Math.max(0, Math.min(100, (account.allowanceLeft / account.monthlyLimit) * 100)) : 0;
@@ -150,12 +151,31 @@ function PaymentRow({ p, colors }: { p: MyPayment; colors: ThemeColors }) {
   );
 }
 
+function ApiKeyRow({ k, colors }: { k: MyApiKey; colors: ThemeColors }) {
+  return (
+    <View style={[styles.row, { borderColor: colors.border }]}>
+      <KeyRound size={18} color={colors.muted} />
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.rowTitle, { color: colors.foreground }]}>{k.name}</Text>
+        <Text style={{ color: colors.muted, fontSize: 12 }}>
+          {k.prefix}…{k.club_name ? ` · ${k.club_name}` : ""} · {k.requests_30d ?? 0} requests in 30 days
+        </Text>
+      </View>
+      <View style={{ alignItems: "flex-end" }}>
+        <Text style={{ color: colors.foreground, fontSize: 13 }}>{formatDollars(k.spend_month_usd ?? 0)}</Text>
+        <Text style={{ color: colors.muted, fontSize: 11 }}>this month</Text>
+      </View>
+    </View>
+  );
+}
+
 export default function BillingScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const account = useCreditAccount();
   const topUps = useMyTopUps();
   const payments = useMyPayments();
+  const apiKeys = useMyApiKeys();
   const refresh = useRefreshBilling();
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -205,6 +225,19 @@ export default function BillingScreen() {
             {history.map((t) => <TopUpRow key={t.id} t={t} colors={colors} />)}
           </View>
           <Text style={[styles.foot, { color: colors.muted }]}>Top-ups are refunded as credits only.</Text>
+        </Section>
+      )}
+
+      {(apiKeys.data ?? []).length > 0 && (
+        <Section title="API usage" colors={colors}>
+          <View style={[styles.list, { backgroundColor: colors.card }]}>
+            {(apiKeys.data ?? []).map((k) => <ApiKeyRow key={k.id} k={k} colors={colors} />)}
+          </View>
+          <Text style={[styles.foot, { color: colors.muted }]}>Work your keys start is paid from these credits.</Text>
+          <TouchableOpacity onPress={openWebKeys} style={styles.webLink}>
+            <Text style={{ color: colors.primary }}>Manage keys on ilm.red</Text>
+            <ExternalLink size={14} color={colors.primary} />
+          </TouchableOpacity>
         </Section>
       )}
 

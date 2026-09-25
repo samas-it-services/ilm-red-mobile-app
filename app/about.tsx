@@ -21,9 +21,11 @@ import {
   FileText,
   ExternalLink,
   BookOpen,
+  Code2,
 } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Constants from "expo-constants";
+import { ILM_WEB_URL } from "@/constants/config";
 
 import { useTheme } from "@/providers/ThemeProvider";
 
@@ -166,6 +168,25 @@ export default function AboutScreen() {
               </Text>
               <Text style={[styles.linkSubtitle, { color: colors.muted }]}>
                 Rules and conditions
+              </Text>
+            </View>
+            <ExternalLink size={18} color={colors.muted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPress={() => handleOpenLink(`${ILM_WEB_URL}/developers`)}
+            accessibilityRole="link"
+          >
+            <View style={[styles.linkIcon, { backgroundColor: colors.primary + "20" }]}>
+              <Code2 size={18} color={colors.primary} />
+            </View>
+            <View style={styles.linkTextContainer}>
+              <Text style={[styles.linkTitle, { color: colors.foreground }]}>
+                Developers
+              </Text>
+              <Text style={[styles.linkSubtitle, { color: colors.muted }]}>
+                The ilm.red API: guides, reference and keys
               </Text>
             </View>
             <ExternalLink size={18} color={colors.muted} />
