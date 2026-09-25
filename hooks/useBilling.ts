@@ -175,6 +175,16 @@ export function useMyPayments() {
   });
 }
 
+/** One receipt, with its tax lines (state, county, city) when it came from a top-up. */
+export function useMyPaymentReceipt(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...billingKeys.payments(), id],
+    enabled,
+    staleTime: 5 * 60_000,
+    queryFn: () => ilmApi.call("premium", "getMyPayment", { path: { payment_id: id } }),
+  });
+}
+
 export function useBillingAgreement(enabled: boolean) {
   return useQuery({
     queryKey: billingKeys.agreement(),

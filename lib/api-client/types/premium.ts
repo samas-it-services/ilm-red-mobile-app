@@ -426,6 +426,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/premium/refund-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The refund policy in force
+         * @description The refund and cancellation policy Finance has published, or null while the text built into ilm.red/refund applies. Anyone may read it.
+         */
+        get: operations["getRefundPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/legal-reviews/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * A legal draft shared for review
+         * @description Finance can share a draft (billing agreement, API terms or refund policy) by a secret link so a reviewer can read it before it is published. The draft is not in force and nobody is asked to agree to it. An unknown or withdrawn link is 404.
+         */
+        get: operations["getLegalDraftForReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/premium/billing-agreement/versions/{version}": {
         parameters: {
             query?: never;
@@ -728,6 +770,34 @@ export interface components {
             /** Format: date-time */
             published_at?: string | null;
         };
+        RefundPolicyRead: {
+            policy: components["schemas"]["BillingAgreementDocument"] | null;
+            versions: {
+                version: number;
+                /** Format: date-time */
+                effective_at: string | null;
+            }[];
+        };
+        LegalDraftForReview: {
+            /** @enum {string} */
+            kind: "billing_agreement" | "api_terms" | "refund_policy";
+            kind_label: string;
+            version: number;
+            title: string;
+            summary?: string | null;
+            body_md: string;
+            /**
+             * @description published when Finance has since published this version.
+             * @enum {string}
+             */
+            status: "draft" | "published";
+            /** Format: date-time */
+            shared_at?: string | null;
+            /** Format: date-time */
+            updated_at?: string | null;
+            /** @description Where reviewers send comments. */
+            comments_to: string;
+        };
         BillingAgreementStatus: {
             /** @description Null until a version is published. */
             current_version: number | null;
@@ -803,6 +873,8 @@ export interface components {
             gross: components["schemas"]["Money"];
             tax: components["schemas"]["Money"];
             tax_rate: number;
+            /** @description State, county and city, when the payment came from a top-up; empty otherwise. */
+            tax_lines?: components["schemas"]["TaxLine"][];
             discount: components["schemas"]["Money"];
             discount_rate?: number;
             credited: components["schemas"]["Credits"];
@@ -1653,6 +1725,13 @@ export interface components {
         };
         /** @description Credits, rounded by the server to four decimal places. One credit is one US dollar of spend at list price ($1 buys 1 credit, before any tax the payment method takes off). */
         Credits: number;
+        /** @description One tax line of a payment with its amount. The lines add up to the payment's tax to the cent (the last line takes any rounding). */
+        TaxLine: {
+            code: string;
+            label: string;
+            rate: number;
+            amount: components["schemas"]["Money"];
+        };
         /** @description One tax a payment method collects, e.g. California state sales tax 7.25%. The method's tax_rate is the sum of its lines. */
         TaxComponent: {
             /** @example ca_state */
@@ -1661,13 +1740,6 @@ export interface components {
             label: string;
             /** @example 0.0725 */
             rate: number;
-        };
-        /** @description One tax line of a payment with its amount. The lines add up to the payment's tax to the cent (the last line takes any rounding). */
-        TaxLine: {
-            code: string;
-            label: string;
-            rate: number;
-            amount: components["schemas"]["Money"];
         };
         /**
          * Format: date-time
@@ -2509,6 +2581,51 @@ export interface operations {
                     "application/json": components["schemas"]["BillingAgreementRead"];
                 };
             };
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    getRefundPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The policy, or null. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundPolicyRead"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    getLegalDraftForReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The draft. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDraftForReview"];
+                };
+            };
+            404: components["responses"]["NotFound"];
             429: components["responses"]["RateLimited"];
         };
     };

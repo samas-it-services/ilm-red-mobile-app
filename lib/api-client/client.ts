@@ -162,7 +162,8 @@ export function createApiClient(opts: ClientOptions = {}) {
       const text = await res.text();
       let json: unknown;
       try { json = text ? JSON.parse(text) : undefined; } catch { json = undefined; }
-      if (res.ok) return json as ResponseOf<S, O>;
+      // A non-JSON success (a CSV download, format=csv) comes back as its text.
+      if (res.ok) return (json === undefined && text ? text : json) as ResponseOf<S, O>;
       const ra = res.headers.get('Retry-After');
       const retryAfter = ra !== null && ra.trim() !== '' && Number.isFinite(Number(ra)) ? Number(ra) : undefined;
       if (method === 'GET' && (res.status === 429 || res.status === 503) && attempt < readRetries) {

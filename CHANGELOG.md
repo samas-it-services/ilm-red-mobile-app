@@ -20,6 +20,31 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-09-25 | 🚀 feat: Receipts show the three sales tax lines (v1.6.0)
+
+### 📄 Summary
+Tap a receipt on the Billing tab to see what was paid, the sales tax split into California state, Santa Clara County and City of Milpitas, and the credits added, the same as the receipt on ilm.red.
+
+### 📁 Files Changed
+- `app/(tabs)/billing.tsx` - receipts open to show the receipt with tax lines
+- `hooks/useBilling.ts` - `useMyPaymentReceipt` (getMyPayment)
+- `lib/api-client/*` - synced from ilm-red-unbound (tax lines on receipts, review links, sales tax report)
+- `package.json`, `app.json` - version 1.6.0
+
+### 🧠 Rationale
+Members see how the tax on each payment was split, wherever they look.
+
+### 🔄 Behavior / Compatibility Implications
+- None; receipts without tax lines show the total only.
+
+### 🧪 Testing Recommendations
+- Billing tab: tap a Zelle receipt; three tax lines add up to the Sales tax total.
+
+### 📌 Follow‑ups
+- None.
+
+---
+
 ## 2026-09-25 | 🧹 chore: Store release workflow, app version 1.5.0, tax collected once
 
 ### 📄 Summary

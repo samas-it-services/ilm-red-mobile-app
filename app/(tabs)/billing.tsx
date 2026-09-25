@@ -20,7 +20,7 @@ import type { ThemeColors } from "@/constants/colors";
 import { ILM_WEB_URL } from "@/constants/config";
 import {
   dollars, formatDollars, topUpStatusLabel,
-  useCreditAccount, useMyPayments, useMyTopUps, usePaymentMethods, useRefreshBilling,
+  useCreditAccount, useMyPaymentReceipt, useMyPayments, useMyTopUps, usePaymentMethods, useRefreshBilling,
   type CreditAccount, type MyPayment, type TopUp,
 } from "@/hooks/useBilling";
 import { ZelleTopUp } from "@/components/billing/ZelleTopUp";
@@ -108,16 +108,45 @@ function TopUpRow({ t, colors }: { t: TopUp; colors: ThemeColors }) {
   );
 }
 
+/** A receipt row; tap to see the receipt with its tax lines (getMyPayment). */
 function PaymentRow({ p, colors }: { p: MyPayment; colors: ThemeColors }) {
+  const [open, setOpen] = React.useState(false);
+  const receipt = useMyPaymentReceipt(p.id, open);
+  const r = receipt.data;
   return (
-    <View style={[styles.row, { borderColor: colors.border }]}>
-      <Receipt size={18} color={colors.muted} />
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.rowTitle, { color: colors.foreground }]}>${dollars(p.amount)} · {p.provider}</Text>
-        <Text style={{ color: colors.muted, fontSize: 12 }}>{new Date(p.created_at).toLocaleDateString()} · {p.status}</Text>
+    <TouchableOpacity
+      onPress={() => setOpen((v) => !v)}
+      accessibilityRole="button"
+      accessibilityState={{ expanded: open }}
+      style={[styles.rowWrap, { borderColor: colors.border }]}
+    >
+      <View style={styles.rowInner}>
+        <Receipt size={18} color={colors.muted} />
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.rowTitle, { color: colors.foreground }]}>${dollars(p.amount)} · {p.provider}</Text>
+          <Text style={{ color: colors.muted, fontSize: 12 }}>{new Date(p.created_at).toLocaleDateString()} · {p.status}</Text>
+        </View>
+        <Text style={{ color: colors.foreground, fontSize: 13 }}>{Number(p.credits_granted).toFixed(2)} credits</Text>
       </View>
-      <Text style={{ color: colors.foreground, fontSize: 13 }}>{Number(p.credits_granted).toFixed(2)} credits</Text>
-    </View>
+      {open && (
+        <View style={styles.receipt}>
+          {receipt.isLoading || !r ? <ActivityIndicator size="small" color={colors.primary} /> : (
+            <>
+              <View style={styles.rl}><Text style={{ color: colors.foreground }}>Paid</Text><Text style={{ color: colors.foreground }}>${dollars(r.gross)}</Text></View>
+              <View style={styles.rl}><Text style={{ color: colors.muted }}>Sales tax</Text><Text style={{ color: colors.muted }}>-${dollars(r.tax)}</Text></View>
+              {(r.tax_lines ?? []).map((l) => (
+                <View key={l.code} style={[styles.rl, { paddingLeft: 12 }]}>
+                  <Text style={{ color: colors.muted, fontSize: 12 }}>{l.label} {Math.round(l.rate * 100000) / 1000}%</Text>
+                  <Text style={{ color: colors.muted, fontSize: 12 }}>${dollars(l.amount)}</Text>
+                </View>
+              ))}
+              <View style={styles.rl}><Text style={{ color: colors.foreground, fontWeight: "700" }}>Credits added</Text><Text style={{ color: colors.foreground, fontWeight: "700" }}>{Number(r.credited).toFixed(2)}</Text></View>
+              <Text style={{ color: colors.muted, fontSize: 12, marginTop: 4 }}>Sold by saMas IT Services{r.confirmation ? ` · ${r.confirmation}` : ""}</Text>
+            </>
+          )}
+        </View>
+      )}
+    </TouchableOpacity>
   );
 }
 
@@ -211,6 +240,10 @@ const styles = StyleSheet.create({
   linkTitle: { fontSize: 16, fontWeight: "600" },
   list: { borderRadius: 12, overflow: "hidden" },
   row: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  rowWrap: { padding: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  rowInner: { flexDirection: "row", alignItems: "center", gap: 10 },
+  receipt: { marginTop: 10, gap: 3 },
+  rl: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
   rowTitle: { fontSize: 15, fontWeight: "600" },
   foot: { fontSize: 12, marginTop: 8 },
   webLink: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12 },

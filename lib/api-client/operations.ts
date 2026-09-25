@@ -1012,6 +1012,18 @@ export const OPERATIONS = {
       "GET",
       "/finance/billing-agreement/versions/{version}/acceptances"
     ],
+    "financeShareLegalDraft": [
+      "POST",
+      "/finance/billing-agreement/versions/{version}/review-link"
+    ],
+    "financeUnshareLegalDraft": [
+      "DELETE",
+      "/finance/billing-agreement/versions/{version}/review-link"
+    ],
+    "financeGetSalesTaxReport": [
+      "GET",
+      "/finance/sales-tax"
+    ],
     "financeListTopUps": [
       "GET",
       "/finance/top-ups"
@@ -1217,6 +1229,26 @@ export const OPERATIONS = {
     "addBooksToMyShelf": [
       "POST",
       "/me/shelf/{shelf}/items"
+    ],
+    "getMyApiKeys": [
+      "GET",
+      "/me/api-keys"
+    ],
+    "createMyApiKey": [
+      "POST",
+      "/me/api-keys"
+    ],
+    "revokeMyApiKey": [
+      "DELETE",
+      "/me/api-keys/{key_id}"
+    ],
+    "getApiTerms": [
+      "GET",
+      "/me/api-terms"
+    ],
+    "acceptApiTerms": [
+      "POST",
+      "/me/api-terms/acceptances"
     ]
   },
   "ops": {
@@ -1441,6 +1473,14 @@ export const OPERATIONS = {
     "getBillingAgreement": [
       "GET",
       "/premium/billing-agreement"
+    ],
+    "getRefundPolicy": [
+      "GET",
+      "/premium/refund-policy"
+    ],
+    "getLegalDraftForReview": [
+      "GET",
+      "/premium/legal-reviews/{token}"
     ],
     "getBillingAgreementVersion": [
       "GET",

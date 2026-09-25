@@ -681,7 +681,10 @@ export interface paths {
     };
     "/finance/billing-agreement/versions": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+                kind?: components["parameters"]["LegalKind"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -705,7 +708,10 @@ export interface paths {
     };
     "/finance/billing-agreement/versions/{version}": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+                kind?: components["parameters"]["LegalKind"];
+            };
             header?: never;
             path: {
                 version: components["parameters"]["AgreementVersion"];
@@ -727,7 +733,10 @@ export interface paths {
     };
     "/finance/billing-agreement/versions/{version}/publish": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+                kind?: components["parameters"]["LegalKind"];
+            };
             header?: never;
             path: {
                 version: components["parameters"]["AgreementVersion"];
@@ -749,7 +758,10 @@ export interface paths {
     };
     "/finance/billing-agreement/versions/{version}/acceptances": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+                kind?: components["parameters"]["LegalKind"];
+            };
             header?: never;
             path: {
                 version: components["parameters"]["AgreementVersion"];
@@ -761,6 +773,55 @@ export interface paths {
          * @description Newest first, with when and from which app, and a fingerprint of the exact text they saw.
          */
         get: operations["financeListAgreementAcceptances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/billing-agreement/versions/{version}/review-link": {
+        parameters: {
+            query?: {
+                /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+                kind?: components["parameters"]["LegalKind"];
+            };
+            header?: never;
+            path: {
+                version: components["parameters"]["AgreementVersion"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Share a draft for review
+         * @description Makes a secret link to this draft (`version.review.url`) that anyone can open without signing in, to read it before it is published. It says it is a draft, is hidden from search engines, and nobody is asked to agree to it. Each call makes a new link and retires the old one. Only drafts can be shared.
+         */
+        post: operations["financeShareLegalDraft"];
+        /**
+         * Stop sharing a draft
+         * @description The review link stops working at once.
+         */
+        delete: operations["financeUnshareLegalDraft"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/sales-tax": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sales tax collected, by state, county and city
+         * @description For filing. Money that reached the bank between `from` and `to` (by the day on the bank line), grouped by day, month or quarter, with the tax split into the lines each payment was made at (California state, Santa Clara County, City of Milpitas). Tax on payments recorded outside top-ups is counted in `not_split`. `format=csv` returns the same table as a CSV download.
+         */
+        get: operations["financeGetSalesTaxReport"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1349,6 +1410,47 @@ export interface components {
             /** Format: date-time */
             updated_at?: string | null;
             acceptances: number;
+            /** @description The review link while a draft is shared, else null. */
+            review?: {
+                /** Format: uri */
+                url: string;
+                /** Format: date-time */
+                shared_at: string | null;
+            } | null;
+        };
+        SalesTaxLineAmount: {
+            code: string;
+            amount: components["schemas"]["Money"];
+        };
+        SalesTaxRow: {
+            /**
+             * Format: date
+             * @description First day of the day, month or quarter.
+             */
+            period?: string;
+            payments: number;
+            received: components["schemas"]["Money"];
+            /** @description One per component, in the same order. */
+            lines: components["schemas"]["SalesTaxLineAmount"][];
+            not_split: components["schemas"]["Money"];
+            tax_total: components["schemas"]["Money"];
+            credits: components["schemas"]["Credits"];
+        };
+        SalesTaxReport: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            /** @enum {string} */
+            group: "day" | "month" | "quarter";
+            /**
+             * @description The day money reached the bank.
+             * @enum {string}
+             */
+            basis: "received_on";
+            components: components["schemas"]["TaxComponent"][];
+            rows: components["schemas"]["SalesTaxRow"][];
+            totals: components["schemas"]["SalesTaxRow"];
         };
         AgreementDraftCreate: {
             title: string;
@@ -1929,13 +2031,6 @@ export interface components {
         RefundId: string;
         /** @example bilgrami */
         Username: string;
-        /** @description One tax line of a payment with its amount. The lines add up to the payment's tax to the cent (the last line takes any rounding). */
-        TaxLine: {
-            code: string;
-            label: string;
-            rate: number;
-            amount: components["schemas"]["Money"];
-        };
         /** @description One tax a payment method collects, e.g. California state sales tax 7.25%. The method's tax_rate is the sum of its lines. */
         TaxComponent: {
             /** @example ca_state */
@@ -1944,6 +2039,13 @@ export interface components {
             label: string;
             /** @example 0.0725 */
             rate: number;
+        };
+        /** @description One tax line of a payment with its amount. The lines add up to the payment's tax to the cent (the last line takes any rounding). */
+        TaxLine: {
+            code: string;
+            label: string;
+            rate: number;
+            amount: components["schemas"]["Money"];
         };
         JobId: string;
         OrderId: string;
@@ -2017,6 +2119,8 @@ export interface components {
     };
     parameters: {
         GrantId: components["schemas"]["GrantId"];
+        /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+        LegalKind: "billing_agreement" | "api_terms" | "refund_policy";
         AgreementVersion: number;
         TopUpId: components["schemas"]["TopUpId"];
         PaymentId: components["schemas"]["PaymentId"];
@@ -3340,7 +3444,10 @@ export interface operations {
     };
     financeListAgreementVersions: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+                kind?: components["parameters"]["LegalKind"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -3364,7 +3471,10 @@ export interface operations {
     };
     financeCreateAgreementDraft: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+                kind?: components["parameters"]["LegalKind"];
+            };
             header: {
                 /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
                 "X-Audit-Reason": components["parameters"]["AuditReason"];
@@ -3406,7 +3516,10 @@ export interface operations {
     };
     financeUpdateAgreementDraft: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+                kind?: components["parameters"]["LegalKind"];
+            };
             header: {
                 /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
                 "X-Audit-Reason": components["parameters"]["AuditReason"];
@@ -3448,7 +3561,10 @@ export interface operations {
     };
     financePublishAgreementVersion: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+                kind?: components["parameters"]["LegalKind"];
+            };
             header: {
                 /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
                 "X-Audit-Reason": components["parameters"]["AuditReason"];
@@ -3493,6 +3609,8 @@ export interface operations {
     financeListAgreementAcceptances: {
         parameters: {
             query?: {
+                /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+                kind?: components["parameters"]["LegalKind"];
                 /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
                 cursor?: components["parameters"]["Cursor"];
                 /** @description Page size. */
@@ -3520,6 +3638,121 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeShareLegalDraft: {
+        parameters: {
+            query?: {
+                /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+                kind?: components["parameters"]["LegalKind"];
+            };
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+                /** @description Required on this call because it creates something or spends credits. See IdempotencyKey. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyRequired"];
+            };
+            path: {
+                version: components["parameters"]["AgreementVersion"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Shared; the version now carries its review link. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementVersionChange"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Already published (`conflict`); the published text is public anyway. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeUnshareLegalDraft: {
+        parameters: {
+            query?: {
+                /** @description Which document: the billing agreement (default), the API terms members accept before making an API key (v1.447.0), or the refund policy (v1.449.0; read on the site, never agreed to). */
+                kind?: components["parameters"]["LegalKind"];
+            };
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+            };
+            path: {
+                version: components["parameters"]["AgreementVersion"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No longer shared. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementVersionChange"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Already published (`conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeGetSalesTaxReport: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                group?: "day" | "month" | "quarter";
+                format?: "json" | "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The report. */
+            200: {
+                headers: {
+                    /** @description With `format=csv`: `attachment; filename="ilm-red-sales-tax-FROM-to-TO.csv"`. */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalesTaxReport"];
+                    "text/csv": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             422: components["responses"]["ValidationFailed"];
         };
     };

@@ -667,10 +667,153 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My API keys, their use and spend, prices, limits and agreements
+         * @description Everything the API keys page (/developers/keys) shows, in one read. `prices` are what I pay per action (the provider's price times my margin; a blog post by the blog ladder), in dollars (1 credit = $1). Each key's `spend_month_usd` and `spend_total_usd` add up the billed jobs its requests started. `daily_cap` is the platform's daily spending cap: when it is reached, paid work waits until the next day. `rate_limits` are enforced per key.
+         */
+        get: operations["getMyApiKeys"];
+        put?: never;
+        /**
+         * Make an API key
+         * @description Premium members only (`premium_required`), for a club I own or administer (`not_club_admin`). The billing agreement and the API terms in force must be accepted first; otherwise `agreement_required` (428) names the `kind` and `current_version`. The secret is in this response only and cannot be shown again. Same rules as `POST /keys`.
+         */
+        post: operations["createMyApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/api-keys/{key_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke one of my API keys
+         * @description Takes effect immediately; the next call with that key is refused with `key_revoked`.
+         */
+        delete: operations["revokeMyApiKey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/api-terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The API terms in force, and whether I have agreed
+         * @description `terms` is null until an administrator publishes a version; until then there is nothing to agree to and key making is not blocked by it.
+         */
+        get: operations["getApiTerms"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/api-terms/acceptances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agree to the API terms in force
+         * @description Member session only: an API key or a connected assistant cannot agree for the member. Names the version the member read; a newer one in force is refused with `agreement_version_stale`.
+         */
+        post: operations["acceptApiTerms"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Where I stand with one legal document; `required` is true when a version is in force that I have not agreed to. */
+        AgreementStatus: {
+            current_version?: number | null;
+            accepted_version?: number | null;
+            required?: boolean;
+        } | null;
+        MyApiKeys: {
+            premium?: boolean;
+            agreements?: {
+                billing_agreement?: components["schemas"]["AgreementStatus"];
+                api_terms?: components["schemas"]["AgreementStatus"];
+            };
+            clubs?: {
+                id?: string;
+                slug?: string | null;
+                name?: string;
+            }[];
+            prices?: {
+                action?: string;
+                unit?: string;
+                usd_low?: number | null;
+                usd_high?: number | null;
+                note?: string | null;
+            }[];
+            credits?: {
+                monthly_limit_usd?: number | null;
+                month_remaining_usd?: number | null;
+                purchased_usd?: number | null;
+            };
+            daily_cap?: {
+                cap_usd?: number | null;
+                spent_today_usd?: number | null;
+                left_usd?: number | null;
+            };
+            rate_limits?: {
+                reads?: number;
+                writes?: number;
+                window_seconds?: number;
+            };
+            keys?: {
+                id?: string;
+                name?: string;
+                prefix?: string;
+                club_id?: string | null;
+                club_name?: string | null;
+                scopes?: string[];
+                /** Format: date-time */
+                created_at?: string | null;
+                /** Format: date-time */
+                expires_at?: string | null;
+                /** Format: date-time */
+                revoked_at?: string | null;
+                /** Format: date-time */
+                last_used_at?: string | null;
+                requests_30d?: number;
+                spend_month_usd?: number;
+                spend_total_usd?: number;
+            }[];
+        };
         Me: {
             /** @description With `include=profile`. My whole profile record (preferences, onboarding, premium flags), without its database id. */
             profile?: {
@@ -1212,6 +1355,7 @@ export interface components {
             emoji: string;
             color?: string;
         };
+        KeyId: string;
         /**
          * @description The stable part of a problem. Branch on this, never on `title` or `detail`.
          * @enum {string}
@@ -1329,6 +1473,15 @@ export interface components {
         };
         /** @description No such resource, or one the caller may not see (`not_found`). The two are deliberately indistinguishable. */
         NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description The request is valid but clashes with the current state (`conflict` or a more specific slug named on the operation). */
+        Conflict: {
             headers: {
                 [name: string]: unknown;
             };
@@ -2555,6 +2708,193 @@ export interface operations {
             };
             422: components["responses"]["ValidationFailed"];
             429: components["responses"]["RateLimited"];
+        };
+    };
+    getMyApiKeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description My keys and everything around them. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyApiKeys"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createMyApiKey: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    club_id: string;
+                    scopes: ("papers:read" | "papers:write" | "terms:read" | "terms:write" | "graph:read" | "graph:write" | "extract:run" | "blog:read" | "blog:write")[];
+                    /**
+                     * Format: date-time
+                     * @description Defaults to one year from now.
+                     */
+                    expires_at?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The key, with its secret (shown once). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id?: string;
+                        secret?: string;
+                        prefix?: string;
+                        name?: string;
+                        club_id?: string;
+                        scopes?: string[];
+                        /** Format: date-time */
+                        expires_at?: string | null;
+                        /** Format: date-time */
+                        created_at?: string;
+                        warning?: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+            /** @description Agree to the billing agreement or the API terms in force first (`agreement_required`). */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    revokeMyApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key_id: components["schemas"]["KeyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id?: string;
+                        revoked?: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getApiTerms: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The terms and my status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        terms?: {
+                            version?: number;
+                            title?: string;
+                            summary?: string | null;
+                            body_md?: string;
+                            body_sha256?: string;
+                            /** Format: date-time */
+                            effective_at?: string | null;
+                            /** Format: date-time */
+                            published_at?: string | null;
+                        } | null;
+                        my_status?: components["schemas"]["AgreementStatus"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    acceptApiTerms: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    version: number;
+                    /**
+                     * @default web
+                     * @enum {string}
+                     */
+                    surface?: "web" | "mobile";
+                    app_version?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Agreed. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        version?: number;
+                        /** Format: date-time */
+                        accepted_at?: string;
+                        my_status?: components["schemas"]["AgreementStatus"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
         };
     };
 }
