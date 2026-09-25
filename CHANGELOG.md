@@ -20,6 +20,30 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-09-25 | 🐛 fix: Zelle tax preview matches the charge to the cent (v1.8.0)
+
+### 📄 Summary
+The Zelle screen previews the sales tax split before you pay. For about one amount in ten (for example $6, $14, $30, $50) it showed the California state line one cent low and the City of Milpitas line one cent high, because of floating-point rounding. The total and the credits were always right; now every line matches what is charged.
+
+### 📁 Files Changed
+- `lib/tax.ts` - `taxCents()` works in whole cents and millionths of a rate, so rounding is exact and matches the server; `splitTax` and `creditsAfterTax` use it
+- `package.json`, `app.json` - version 1.8.0
+
+### 🧠 Rationale
+Found by the finance end-to-end parity check: the preview was compared with the server's split for every whole dollar from $5 to $500. 49 of 496 amounts differed by a cent on two lines. After the fix, 0 differ.
+
+### 🔄 Behavior / Compatibility Implications
+- Preview only. Top-ups already made always showed the server's own lines.
+
+### 🧪 Testing Recommendations
+- Billing tab > Add funds > Zelle, type 6: lines read $0.44 + $0.15 + $0.01, 5.40 credits.
+- Type 20: $1.45 + $0.50 + $0.05, 18.00 credits.
+
+### 📌 Follow-ups
+- None.
+
+---
+
 ## 2026-09-25 | 🚀 feat: Developers and API keys in the app (v1.7.0)
 
 ### 📄 Summary
