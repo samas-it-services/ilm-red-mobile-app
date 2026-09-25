@@ -237,7 +237,7 @@ export function ZelleTopUp({
         {create.isPending ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Pay ${amount ?? ""} with Zelle</Text>}
       </TouchableOpacity>
       <Text style={{ color: colors.muted, fontSize: 12 }}>
-        From your own bank app, no card needed. Needs a US bank account. Sold by saMas IT Services. Top-ups are refunded as credits only, never back to your bank.
+        From your own bank app, no card needed. Needs a US bank account. Sold by saMas IT Services. Tax is taken once, when you pay; spending your credits on AI is never taxed again. Top-ups are refunded as credits only, never back to your bank.
       </Text>
       <AgreementSheet
         visible={agreeOpen}

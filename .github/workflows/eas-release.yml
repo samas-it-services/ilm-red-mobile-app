@@ -1,0 +1,43 @@
+name: EAS Release (store builds)
+
+# Store builds for iOS and Android, then submission to App Store Connect (TestFlight) and Google
+# Play. Run by hand from the Actions tab (or the API) when a version is ready to ship.
+# Needs the EXPO_TOKEN repository secret, and on expo.dev: iOS distribution credentials, an App
+# Store Connect API key, and a Google Play service account key for this project.
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "all, ios or android"
+        required: true
+        default: all
+      submit:
+        description: "Submit to the stores after building (true/false)"
+        required: true
+        default: "true"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci --legacy-peer-deps
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build (production profile)
+        run: eas build --platform ${{ inputs.platform }} --profile production --non-interactive --wait
+
+      - name: Submit to the stores
+        if: inputs.submit == 'true'
+        run: eas submit --platform ${{ inputs.platform }} --profile production --latest --non-interactive --wait

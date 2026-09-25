@@ -20,6 +20,31 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-09-25 | 🧹 chore: Store release workflow, app version 1.5.0, tax collected once
+
+### 📄 Summary
+Adds a hand-run GitHub Actions workflow that builds iOS and Android with the production profile and submits both to the stores. The app version shown in the stores is now 1.5.0 (it was still 1.0.0), and build numbers are managed by EAS so each store build gets a higher one. The Zelle screen now says tax is taken once, when you pay.
+
+### 📁 Files Changed
+- `.github/workflows/eas-release.yml` - new: build (all, ios or android) and optional submit
+- `app.json` - version 1.5.0
+- `eas.json` - `appVersionSource: remote`, production `autoIncrement`
+- `components/billing/ZelleTopUp.tsx` - tax-once sentence
+
+### 🧠 Rationale
+The existing workflow only builds Android preview APKs. Store releases need both platforms and a submit step.
+
+### 🔄 Behavior / Compatibility Implications
+- None for users beyond the new sentence.
+
+### 🧪 Testing Recommendations
+- Run "EAS Release (store builds)" from the Actions tab; check the build and submit steps.
+
+### 📌 Follow‑ups
+- None.
+
+---
+
 ## 2026-09-25 | 🚀 feat: Billing tab on the new API, Zelle top-ups on Android, sales tax in lines (v1.5.0)
 
 ### 📄 Summary
