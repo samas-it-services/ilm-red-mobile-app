@@ -15,9 +15,9 @@ export interface paths {
          * Browse the catalog
          * @description Public books to anyone. Signed-in callers also get members books, their own books and books shared with them. Filter by `category`, `lang` (the book's original language or any language it has text in) and a free-text `q` (fuzzy on title, author and description; typos tolerated). Sortable by `uploaded_at` (default, newest first), `title`, `view_count`, `rating` and `featured_at`; when `q` is present and no `sort` is given, results come in relevance order.
          *
-         *     `q` follows the library query language and matching rules of `GET /search` (whole words rank above word parts, Urdu and Arabic letter shapes and vowel marks are folded); from v1.430.0 it runs on `search_books_v2`, before that it was a plain substring match.
+         *     `q` follows the library query language and matching rules of `GET /search` (whole words rank above word parts, Urdu and Arabic letter shapes and vowel marks are folded); from v1.438.0 it runs on `search_books_v2`, before that it was a plain substring match.
          *
-         *     `owner=me` (planned, v1.430.0) lists only the caller's own uploads; with it, `visibility` narrows to one visibility and `include_total=true` adds `total` (the same number the bookshelf shows, taken-down books excluded). `fields=summary` returns slim rows (`BookSummary`) for agents and pickers.
+         *     `owner=me` (planned, v1.438.0) lists only the caller's own uploads; with it, `visibility` narrows to one visibility and `include_total=true` adds `total` (the same number the bookshelf shows, taken-down books excluded). `fields=summary` returns slim rows (`BookSummary`) for agents and pickers.
          */
         get: operations["listBooks"];
         put?: never;
@@ -378,7 +378,7 @@ export interface paths {
         };
         /**
          * Search inside one book
-         * @description Page hits with snippets, in page order. `lang` searches that translation (default: the original text); `lang=all` (planned, v1.430.0) searches the original and every saved translation, each hit keeping its `lang`. Snippets mark matched words with `<mark>` and `</mark>`. `match_count` on each hit lets the reader cycle through matches on the page. Matching follows `GET /search` (word forms, Urdu and Arabic letter shapes, vowel marks). An empty answer carries a `hint` (for example, the book has Urdu text and the query was in Latin letters).
+         * @description Page hits with snippets, in page order. `lang` searches that translation (default: the original text); `lang=all` (planned, v1.438.0) searches the original and every saved translation, each hit keeping its `lang`. Snippets mark matched words with `<mark>` and `</mark>`. `match_count` on each hit lets the reader cycle through matches on the page. Matching follows `GET /search` (word forms, Urdu and Arabic letter shapes, vowel marks). An empty answer carries a `hint` (for example, the book has Urdu text and the query was in Latin letters).
          */
         get: operations["searchBook"];
         put?: never;
@@ -1867,7 +1867,7 @@ export interface components {
          * @description The stable part of a problem. Branch on this, never on `title` or `detail`.
          * @enum {string}
          */
-        ProblemSlug: "unauthorized" | "key_invalid" | "key_revoked" | "key_expired" | "scope_missing" | "not_club_admin" | "club_quota_reached" | "internal_only" | "not_found" | "term_not_found" | "slug_exists" | "edge_would_cycle" | "drop_not_ready" | "needs_text" | "needs_pages" | "needs_translation" | "paper_locked" | "term_has_edges" | "paper_not_in_club" | "revision_required" | "plan_refused" | "duplicate_brief" | "review_forbidden" | "already_reviewed" | "club_required" | "brief_invalid" | "cost_cap_exceeded" | "repair_invalid" | "idempotency_conflict" | "validation_failed" | "unsupported_kind" | "rate_limited" | "extract_rate_limited" | "internal_error" | "forbidden" | "premium_required" | "insufficient_credits" | "reauth_required" | "version_conflict" | "conflict" | "gone" | "payload_too_large" | "unsupported_media_type" | "quote_expired" | "agent_cap_reached" | "lock_held";
+        ProblemSlug: "unauthorized" | "key_invalid" | "key_revoked" | "key_expired" | "scope_missing" | "not_club_admin" | "club_quota_reached" | "internal_only" | "not_found" | "term_not_found" | "slug_exists" | "edge_would_cycle" | "drop_not_ready" | "needs_text" | "needs_pages" | "needs_translation" | "paper_locked" | "term_has_edges" | "paper_not_in_club" | "revision_required" | "plan_refused" | "duplicate_brief" | "review_forbidden" | "already_reviewed" | "club_required" | "brief_invalid" | "cost_cap_exceeded" | "repair_invalid" | "idempotency_conflict" | "validation_failed" | "unsupported_kind" | "rate_limited" | "extract_rate_limited" | "agreement_required" | "agreement_version_stale" | "over_ceiling" | "top_up_limit" | "method_unavailable" | "self_confirm_forbidden" | "internal_error" | "forbidden" | "premium_required" | "insufficient_credits" | "reauth_required" | "version_conflict" | "conflict" | "gone" | "payload_too_large" | "unsupported_media_type" | "quote_expired" | "agent_cap_reached" | "lock_held";
         /**
          * @description Lowercase words joined by hyphens.
          * @example arabian-nights-one-thousand-and-one-nights
@@ -2120,13 +2120,13 @@ export interface operations {
                 cursor?: components["parameters"]["Cursor"];
                 /** @description Page size. */
                 limit?: components["parameters"]["Limit"];
-                /** @description `me`: only books the caller uploaded (planned, v1.430.0). Members only; anonymous callers get 401. */
+                /** @description `me`: only books the caller uploaded (planned, v1.438.0). Members only; anonymous callers get 401. */
                 owner?: "me";
-                /** @description With `owner=me`, only books of this visibility (planned, v1.430.0). Without `owner=me` it is an error (422). */
+                /** @description With `owner=me`, only books of this visibility (planned, v1.438.0). Without `owner=me` it is an error (422). */
                 visibility?: components["schemas"]["BookVisibility"];
-                /** @description `true` adds `total` to the page (planned, v1.430.0). Allowed with `owner=me` only. */
+                /** @description `true` adds `total` to the page (planned, v1.438.0). Allowed with `owner=me` only. */
                 include_total?: boolean;
-                /** @description `summary` returns `BookSummary` rows instead of full `Book` rows (planned, v1.430.0). */
+                /** @description `summary` returns `BookSummary` rows instead of full `Book` rows (planned, v1.438.0). */
                 fields?: "full" | "summary";
             };
             header?: {

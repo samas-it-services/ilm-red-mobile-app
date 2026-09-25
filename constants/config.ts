@@ -107,3 +107,5 @@ export const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2ZWp0aGpod2h5Z2hyZmJ0aGhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4NTcwMjMsImV4cCI6MjA2NTQzMzAyM30.ZOlSMoNVwhL8I7uA5hJQRQMCL2iY5qPfOGcdpP-ZgGk";
 export const ILM_API_URL = process.env.EXPO_PUBLIC_ILM_API_URL ?? "https://api.ilm.red/v1";
 export const ILM_ADMIN_API_URL = process.env.EXPO_PUBLIC_ILM_ADMIN_API_URL ?? "https://admin.ilm.red/v1";
+/** The website, for pages the app links out to (Premium billing on iOS, the billing agreement). */
+export const ILM_WEB_URL = process.env.EXPO_PUBLIC_ILM_WEB_URL ?? "https://ilm.red";

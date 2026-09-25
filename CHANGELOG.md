@@ -20,6 +20,45 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-09-25 | 🚀 feat: Billing tab on the new API, Zelle top-ups on Android, sales tax in lines (v1.5.0)
+
+### 📄 Summary
+The Billing tab now reads everything from api.ilm.red, the same as the website: what I can spend (monthly allowance left plus credits I added, less anything held for a refund request), my top-ups and my receipts. On Android I can add funds by Zelle: pick $5, $20, $50, $100 or another amount, see the sales tax in three lines (California state 7.25%, Santa Clara County 2.50%, City of Milpitas 0.25%) and the credits I get, agree to the billing agreement when one is in force, then see the QR code, the recipient, the amount and my ILM- reference, send from my bank app and tap "I've sent it". Top-ups are refunded as credits only, and the screen says so before I pay. On iOS, "Add funds on ilm.red" opens the website. The retired `/billing/*` endpoints are no longer called.
+
+### 📁 Files Changed
+- `hooks/useBilling.ts` - rewritten on the typed client: credit account, payment methods, top-ups, payments, billing agreement, and the create / sent / cancel / accept mutations
+- `app/(tabs)/billing.tsx` - rewritten: You can spend, Add funds, Your top-ups, Receipts
+- `components/billing/ZelleTopUp.tsx` - new: amount picker, tax preview, send panel
+- `components/billing/AgreementSheet.tsx` - new: read and agree to the billing agreement
+- `components/billing/ZelleQr.tsx` - new: QR code drawn on the device from the bank's QR text
+- `lib/tax.ts` - new: tax preview split the same way the server does
+- `constants/config.ts` - `ILM_WEB_URL` for pages the app opens on the website
+- `lib/api-client/*` - synced from ilm-red-unbound (billing agreement, top-ups, tax lines)
+- `package.json` - `uqr` (pure JavaScript QR encoder, no native code)
+- `docs/implementation_plans/billing_zelle/agents.md` - plan, assumptions and checks
+
+### 🧠 Rationale
+One billing backend for the website and the app, so both show the same numbers. Zelle lets members top up without a card processor. iOS links out because App Store rules require in-app purchase for digital credits bought inside the app.
+
+### 🔄 Behavior / Compatibility Implications
+- The old balance, usage meters and transaction list are gone; the new screen shows the API's figures.
+- Zelle is switched off on the server until Finance turns it on; until then Add funds says it is not open yet.
+- No new native modules: works as an over-the-air update.
+
+### 🧪 Testing Recommendations
+1. Open Billing: "You can spend" matches Premium > Billing on ilm.red for the same account.
+2. Android, with Zelle switched on: pick $20; you see $1.45 + $0.50 + $0.05 tax and 18.00 credits. Tap Pay.
+3. If a billing agreement is published, the agreement sheet opens; tick and agree; the top-up is created.
+4. The send screen shows the QR code, recipient, $20.00 and an ILM- reference; the share buttons copy each.
+5. Tap "I've sent it": a confirmation appears and the top-up shows as marked sent under Your top-ups.
+6. iPhone: Add funds shows "Add funds on ilm.red" and opens the website.
+
+### 📌 Follow‑ups
+- Receipt detail (tax lines per payment) in the app; for now "Statements and invoices on ilm.red".
+- Card payments once a processor is connected.
+
+---
+
 ## 2026-09-25 | 🚀 feat: Search books and pages on the new library search, search history, my book counts (v1.4.0)
 
 ### 📄 Summary

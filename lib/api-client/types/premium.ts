@@ -406,10 +406,528 @@ export interface paths {
         patch: operations["updatePremiumAiSettings"];
         trace?: never;
     };
+    "/premium/billing-agreement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The billing agreement in force, and whether I have agreed
+         * @description Anyone may read it. `agreement` is null until the first version is published. Signed in, `my_status.required` says whether I must agree before my next payment (a newer version, or I never agreed).
+         */
+        get: operations["getBillingAgreement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/billing-agreement/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * One published version of the billing agreement
+         * @description For reading the exact version a past payment was made under.
+         */
+        get: operations["getBillingAgreementVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/billing-agreement/acceptances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agree to the billing agreement in force
+         * @description Only the version in force can be accepted; an older one is refused with `agreement_version_stale` and the current version number. Agreeing twice is harmless. Only the member, signed in: an API key or a connected assistant cannot agree for them.
+         */
+        post: operations["acceptBillingAgreement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My credit statement for a period
+         * @description Opening balance, every movement and the closing balance. Default period is this month.
+         */
+        get: operations["getMyBillingStatement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What I was charged, line by line
+         * @description One period, optionally one blog post.
+         */
+        get: operations["listMyCharges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/monthly-invoices/{month}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                month: string;
+            };
+            cookie?: never;
+        };
+        /** My invoice for one month */
+        get: operations["getMyMonthlyInvoice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My payments
+         * @description Newest first, each with whether it can still be refunded.
+         */
+        get: operations["listMyPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/payments/{payment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: components["schemas"]["PaymentId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * One of my payments with its receipt lines
+         * @description How the amount became credits (gross, tax, discount, credited).
+         */
+        get: operations["getMyPayment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/refund-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My refund requests */
+        get: operations["listMyRefundRequests"];
+        put?: never;
+        /**
+         * Ask for a refund of a card payment
+         * @description Within the refund window, a standard request needs no reason. Top-ups paid by a manual method (Zelle, from R2) are refunded as credits only and are not eligible here (`conflict`); use Report a problem instead.
+         */
+        post: operations["createMyRefundRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/credit-limit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set my own monthly spending limit
+         * @description Refused with `over_ceiling` above the platform's monthly maximum.
+         */
+        put: operations["setMyCreditLimit"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/payment-methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How I can add funds
+         * @description The methods switched on, each with its limits and tax rate, and the most I can add this month (the monthly ceiling less what I already bought and have waiting). Zelle also carries the recipient, the name the bank shows and `qr_payload` (the text to draw as a QR code), and says it needs a US bank account. Only methods Finance has switched on are listed.
+         */
+        get: operations["listPaymentMethods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/top-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My top-ups */
+        get: operations["listMyTopUps"];
+        put?: never;
+        /**
+         * Start a top-up with a payment method
+         * @description Refused with `agreement_required` (428) until I agree to the billing agreement in force. `next_action` says what to show: a redirect or embedded form for a card, or bank-transfer instructions (recipient, QR code, reference for the memo) for Zelle. Refused with `over_ceiling` above my monthly maximum, `top_up_limit` when too many are already waiting, and `method_unavailable` when the method is off. Whole dollars only. Card methods answer `method_unavailable` until their processor is connected.
+         */
+        post: operations["createTopUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/top-ups/{top_up_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                top_up_id: string;
+            };
+            cookie?: never;
+        };
+        /** One of my top-ups */
+        get: operations["getMyTopUp"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/top-ups/{top_up_id}/sent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                top_up_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tell us I sent the money
+         * @description For a manual method. Nothing is credited until Finance confirms the money arrived.
+         */
+        post: operations["markTopUpSent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/premium/top-ups/{top_up_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                top_up_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a top-up Finance has not decided */
+        post: operations["cancelTopUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        BillingAgreementDocument: {
+            version: number;
+            title: string;
+            summary?: string | null;
+            /** @description The agreement text, in Markdown. */
+            body_md: string;
+            /** @description Fingerprint of this exact text. */
+            body_sha256: string;
+            /** Format: date-time */
+            effective_at: string | null;
+            /** Format: date-time */
+            published_at?: string | null;
+        };
+        BillingAgreementStatus: {
+            /** @description Null until a version is published. */
+            current_version: number | null;
+            accepted_version: number | null;
+            /** @description True when I must agree before my next payment. */
+            required: boolean;
+        };
+        BillingAgreementRead: {
+            agreement: components["schemas"]["BillingAgreementDocument"] | null;
+            versions: {
+                version: number;
+                /** Format: date-time */
+                effective_at: string | null;
+            }[];
+            /** @description Null when not signed in. */
+            my_status: components["schemas"]["BillingAgreementStatus"] | null;
+        };
+        BillingAgreementAccept: {
+            /** @description The version the member read. */
+            version: number;
+            /** @enum {string} */
+            surface?: "web" | "mobile";
+            app_version?: string;
+        };
+        BillingAgreementAccepted: {
+            version: number;
+            /** Format: date-time */
+            accepted_at: string;
+            my_status: components["schemas"]["BillingAgreementStatus"];
+        };
+        MyStatement: {
+            /** @description Opening balance, movements, closing balance. Ids are public ids. */
+            statement: {
+                [key: string]: unknown;
+            };
+        };
+        MyCharges: {
+            charges: {
+                [key: string]: unknown;
+            };
+        };
+        MyMonthlyInvoice: {
+            month: string;
+            invoice: {
+                [key: string]: unknown;
+            };
+        };
+        MyPayment: {
+            id: components["schemas"]["PaymentId"];
+            provider: string;
+            provider_reference?: string | null;
+            amount: components["schemas"]["Money"];
+            refunded: components["schemas"]["Money"];
+            credits_granted: components["schemas"]["Credits"];
+            /** @enum {string} */
+            status: "pending" | "completed" | "failed" | "cancelled" | "refunded";
+            receipt_url?: string | null;
+            refund: {
+                eligible: boolean;
+                refundable: components["schemas"]["Money"];
+                request_status?: string | null;
+            };
+            /** Format: date-time */
+            created_at: string;
+        };
+        MyPaymentReceipt: {
+            id: components["schemas"]["PaymentId"];
+            provider: string;
+            /** Format: date-time */
+            paid_at?: string | null;
+            confirmation?: string | null;
+            status: string;
+            gross: components["schemas"]["Money"];
+            tax: components["schemas"]["Money"];
+            tax_rate: number;
+            discount: components["schemas"]["Money"];
+            discount_rate?: number;
+            credited: components["schemas"]["Credits"];
+            refunded: components["schemas"]["Money"];
+            note?: string | null;
+        };
+        MyRefundRequest: {
+            id: string;
+            payment_id: components["schemas"]["PaymentId"];
+            provider: string;
+            paid: components["schemas"]["Money"];
+            refundable: components["schemas"]["Money"];
+            /** @enum {string} */
+            claim_type: "standard" | "error" | "duplicate" | "failed_processing";
+            reason?: string | null;
+            /** @enum {string} */
+            status: "requested" | "under_review" | "approved" | "denied" | "refunded";
+            decision_reason?: string | null;
+            /** Format: date-time */
+            decided_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        MyRefundRequestCreate: {
+            payment_id: components["schemas"]["PaymentId"];
+            reason?: string;
+            /** @enum {string} */
+            claim_type?: "standard" | "error" | "duplicate" | "failed_processing";
+        };
+        MyRefundRequestCreated: {
+            request: components["schemas"]["MyRefundRequest"];
+        };
+        MyCreditLimitChange: {
+            limit: {
+                amount_minor: number;
+                /** @enum {string} */
+                currency: "USD";
+            };
+        };
+        MyCreditLimitResult: {
+            limit: components["schemas"]["Money"];
+            previous: components["schemas"]["Money"] | null;
+        };
+        PaymentMethodForMe: {
+            method: string;
+            /** @enum {string} */
+            kind: "instant" | "manual";
+            label: string;
+            min: components["schemas"]["Money"];
+            /** @description The most for one top-up, already capped by my monthly ceiling. */
+            max: components["schemas"]["Money"];
+            tax_rate: number;
+            /** @description The taxes this method collects, in display order. */
+            tax_components?: components["schemas"]["TaxComponent"][];
+            /** @enum {string} */
+            refund_policy: "credits_only";
+            /** @description For example `us_bank_account` for Zelle. */
+            needs?: string | null;
+            /** @description How long an unsent top-up is held. */
+            expiry_days?: number;
+            /** @description Zelle only. */
+            bank_transfer?: {
+                recipient: string;
+                display_name: string;
+                /** @description Draw this as a QR code; it is the code the bank issued for the recipient. */
+                qr_payload: string;
+            } | null;
+        };
+        PaymentMethodsForMe: {
+            methods: components["schemas"]["PaymentMethodForMe"][];
+            ceiling_left: components["schemas"]["Money"];
+            billing_agreement?: components["schemas"]["BillingAgreementStatus"];
+        };
+        TopUpCreate: {
+            method: string;
+            amount: {
+                amount_minor: number;
+                /** @enum {string} */
+                currency: "USD";
+            };
+        };
+        TopUpSent: {
+            sender_name?: string;
+            bank_confirmation?: string;
+        };
+        TopUp: {
+            id: string;
+            method: string;
+            /** @enum {string} */
+            status: "awaiting_payment" | "sent" | "processing" | "completed" | "failed" | "rejected" | "cancelled" | "expired";
+            /** @description The memo to put on the Zelle payment, e.g. ILM-7K4QX. */
+            reference?: string | null;
+            amount: components["schemas"]["Money"];
+            tax: components["schemas"]["Money"];
+            tax_rate: number;
+            /** @description The tax split into state, county and city lines. */
+            tax_lines?: components["schemas"]["TaxLine"][];
+            credits: components["schemas"]["Credits"];
+            /** @description The billing agreement version this top-up was made under. */
+            agreement_version?: number | null;
+            sender_name?: string | null;
+            member_confirmation?: string | null;
+            /** Format: date-time */
+            sent_at?: string | null;
+            received?: components["schemas"]["Money"] | null;
+            /** @description What to show next. Null once there is nothing left for the member to do. */
+            next_action?: {
+                /** @enum {string} */
+                type: "redirect" | "embed" | "bank_transfer";
+                url?: string;
+                client_token?: string;
+                recipient?: string;
+                display_name?: string;
+                qr_payload?: string;
+                memo?: string;
+                amount?: components["schemas"]["Money"];
+            } | null;
+            decision_reason?: string | null;
+            /** @enum {string} */
+            refund_policy: "credits_only";
+            /** Format: date-time */
+            expires_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
         /** @example plan_Mo1Scholar */
         PlanId: string;
         /** @example pack_500Credits */
@@ -1100,13 +1618,16 @@ export interface components {
             /** @enum {string} */
             source: "measured" | "kind_spread" | "uncalibrated";
         };
+        /** @example post_3Kf9Wq1Rb7Zc */
+        PostId: string;
+        PaymentId: string;
         InvoiceId: string;
         OrderId: string;
         /**
          * @description The stable part of a problem. Branch on this, never on `title` or `detail`.
          * @enum {string}
          */
-        ProblemSlug: "unauthorized" | "key_invalid" | "key_revoked" | "key_expired" | "scope_missing" | "not_club_admin" | "club_quota_reached" | "internal_only" | "not_found" | "term_not_found" | "slug_exists" | "edge_would_cycle" | "drop_not_ready" | "needs_text" | "needs_pages" | "needs_translation" | "paper_locked" | "term_has_edges" | "paper_not_in_club" | "revision_required" | "plan_refused" | "duplicate_brief" | "review_forbidden" | "already_reviewed" | "club_required" | "brief_invalid" | "cost_cap_exceeded" | "repair_invalid" | "idempotency_conflict" | "validation_failed" | "unsupported_kind" | "rate_limited" | "extract_rate_limited" | "internal_error" | "forbidden" | "premium_required" | "insufficient_credits" | "reauth_required" | "version_conflict" | "conflict" | "gone" | "payload_too_large" | "unsupported_media_type" | "quote_expired" | "agent_cap_reached" | "lock_held";
+        ProblemSlug: "unauthorized" | "key_invalid" | "key_revoked" | "key_expired" | "scope_missing" | "not_club_admin" | "club_quota_reached" | "internal_only" | "not_found" | "term_not_found" | "slug_exists" | "edge_would_cycle" | "drop_not_ready" | "needs_text" | "needs_pages" | "needs_translation" | "paper_locked" | "term_has_edges" | "paper_not_in_club" | "revision_required" | "plan_refused" | "duplicate_brief" | "review_forbidden" | "already_reviewed" | "club_required" | "brief_invalid" | "cost_cap_exceeded" | "repair_invalid" | "idempotency_conflict" | "validation_failed" | "unsupported_kind" | "rate_limited" | "extract_rate_limited" | "agreement_required" | "agreement_version_stale" | "over_ceiling" | "top_up_limit" | "method_unavailable" | "self_confirm_forbidden" | "internal_error" | "forbidden" | "premium_required" | "insufficient_credits" | "reauth_required" | "version_conflict" | "conflict" | "gone" | "payload_too_large" | "unsupported_media_type" | "quote_expired" | "agent_cap_reached" | "lock_held";
         ValidationProblem: components["schemas"]["Problem"] & {
             errors: components["schemas"]["FieldError"][];
         };
@@ -1130,14 +1651,29 @@ export interface components {
             /** @example USD */
             currency: string;
         };
+        /** @description Credits, rounded by the server to four decimal places. One credit is one US dollar of spend at list price ($1 buys 1 credit, before any tax the payment method takes off). */
+        Credits: number;
+        /** @description One tax a payment method collects, e.g. California state sales tax 7.25%. The method's tax_rate is the sum of its lines. */
+        TaxComponent: {
+            /** @example ca_state */
+            code: string;
+            /** @example California state sales tax */
+            label: string;
+            /** @example 0.0725 */
+            rate: number;
+        };
+        /** @description One tax line of a payment with its amount. The lines add up to the payment's tax to the cent (the last line takes any rounding). */
+        TaxLine: {
+            code: string;
+            label: string;
+            rate: number;
+            amount: components["schemas"]["Money"];
+        };
         /**
          * Format: date-time
          * @example 2026-09-22T18:04:05Z
          */
         Timestamp: string;
-        PaymentId: string;
-        /** @description Credits, rounded by the server to four decimal places. One credit is one US cent of model spend at list price. */
-        Credits: number;
         /** Format: uri */
         Url: string;
         RequestId: string;
@@ -1953,6 +2489,522 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getBillingAgreement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The agreement. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingAgreementRead"];
+                };
+            };
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    getBillingAgreementVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description That version. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingAgreementRead"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    acceptBillingAgreement: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BillingAgreementAccept"];
+            };
+        };
+        responses: {
+            /** @description Recorded. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingAgreementAccepted"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description A newer version is in force (`agreement_version_stale`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getMyBillingStatement: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The statement. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyStatement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listMyCharges: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                post_id?: components["schemas"]["PostId"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The charges. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCharges"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getMyMonthlyInvoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The invoice. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyMonthlyInvoice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listMyPayments: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Page size. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of my payments. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        data?: components["schemas"]["MyPayment"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getMyPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: components["schemas"]["PaymentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The payment. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPaymentReceipt"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listMyRefundRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description My refund requests, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        data?: components["schemas"]["MyRefundRequest"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createMyRefundRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MyRefundRequestCreate"];
+            };
+        };
+        responses: {
+            /** @description The request. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyRefundRequestCreated"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Not eligible: outside the window, already requested, or not refundable (`conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    setMyCreditLimit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MyCreditLimitChange"];
+            };
+        };
+        responses: {
+            /** @description Changed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCreditLimitResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Above the platform's monthly maximum (`over_ceiling`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listPaymentMethods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The methods. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentMethodsForMe"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listMyTopUps: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Page size. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of my top-ups. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        data?: components["schemas"]["TopUp"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    createTopUp: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required on this call because it creates something or spends credits. See IdempotencyKey. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyRequired"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopUpCreate"];
+            };
+        };
+        responses: {
+            /** @description The top-up and what to do next. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopUp"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Over the monthly ceiling (`over_ceiling`), too many open top-ups (`top_up_limit`), or the method is off (`method_unavailable`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+            /** @description Agree to the billing agreement in force first (`agreement_required`). */
+            428: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyTopUp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                top_up_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The top-up. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopUp"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    markTopUpSent: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                top_up_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopUpSent"];
+            };
+        };
+        responses: {
+            /** @description Marked sent. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopUp"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Not a manual method, or already decided (`conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    cancelTopUp: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                top_up_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancelled. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopUp"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Already decided (`conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
 }

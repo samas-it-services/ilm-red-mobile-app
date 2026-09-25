@@ -959,6 +959,86 @@ export const OPERATIONS = {
     "financeListAudit": [
       "GET",
       "/finance/audit"
+    ],
+    "financeRecordManualPayment": [
+      "POST",
+      "/finance/manual-payments"
+    ],
+    "financeListCreditGrants": [
+      "GET",
+      "/finance/credit-grants"
+    ],
+    "financeDecideCreditGrant": [
+      "POST",
+      "/finance/credit-grants/{grant_id}/decision"
+    ],
+    "financeListAccounts": [
+      "GET",
+      "/finance/accounts"
+    ],
+    "financeGetAccountStatement": [
+      "GET",
+      "/finance/accounts/{user_id}/statement"
+    ],
+    "financeGetAccountChecks": [
+      "GET",
+      "/finance/accounts/{user_id}/checks"
+    ],
+    "financeSetAccountGapStatus": [
+      "POST",
+      "/finance/accounts/{user_id}/gap-status"
+    ],
+    "financeSetCreditLimit": [
+      "PUT",
+      "/finance/accounts/{user_id}/credit-limit"
+    ],
+    "financeListAgreementVersions": [
+      "GET",
+      "/finance/billing-agreement/versions"
+    ],
+    "financeCreateAgreementDraft": [
+      "POST",
+      "/finance/billing-agreement/versions"
+    ],
+    "financeUpdateAgreementDraft": [
+      "PATCH",
+      "/finance/billing-agreement/versions/{version}"
+    ],
+    "financePublishAgreementVersion": [
+      "POST",
+      "/finance/billing-agreement/versions/{version}/publish"
+    ],
+    "financeListAgreementAcceptances": [
+      "GET",
+      "/finance/billing-agreement/versions/{version}/acceptances"
+    ],
+    "financeListTopUps": [
+      "GET",
+      "/finance/top-ups"
+    ],
+    "financeGetTopUp": [
+      "GET",
+      "/finance/top-ups/{top_up_id}"
+    ],
+    "financeConfirmTopUp": [
+      "POST",
+      "/finance/top-ups/{top_up_id}/confirm"
+    ],
+    "financeRejectTopUp": [
+      "POST",
+      "/finance/top-ups/{top_up_id}/reject"
+    ],
+    "financeMatchBankLines": [
+      "POST",
+      "/finance/top-ups/matches"
+    ],
+    "financeListPaymentMethods": [
+      "GET",
+      "/finance/payment-methods"
+    ],
+    "financeUpdatePaymentMethod": [
+      "PATCH",
+      "/finance/payment-methods/{method}"
     ]
   },
   "me": {
@@ -1357,6 +1437,74 @@ export const OPERATIONS = {
     "updatePremiumAiSettings": [
       "PATCH",
       "/premium/ai-settings"
+    ],
+    "getBillingAgreement": [
+      "GET",
+      "/premium/billing-agreement"
+    ],
+    "getBillingAgreementVersion": [
+      "GET",
+      "/premium/billing-agreement/versions/{version}"
+    ],
+    "acceptBillingAgreement": [
+      "POST",
+      "/premium/billing-agreement/acceptances"
+    ],
+    "getMyBillingStatement": [
+      "GET",
+      "/premium/statement"
+    ],
+    "listMyCharges": [
+      "GET",
+      "/premium/charges"
+    ],
+    "getMyMonthlyInvoice": [
+      "GET",
+      "/premium/monthly-invoices/{month}"
+    ],
+    "listMyPayments": [
+      "GET",
+      "/premium/payments"
+    ],
+    "getMyPayment": [
+      "GET",
+      "/premium/payments/{payment_id}"
+    ],
+    "listMyRefundRequests": [
+      "GET",
+      "/premium/refund-requests"
+    ],
+    "createMyRefundRequest": [
+      "POST",
+      "/premium/refund-requests"
+    ],
+    "setMyCreditLimit": [
+      "PUT",
+      "/premium/credit-limit"
+    ],
+    "listPaymentMethods": [
+      "GET",
+      "/premium/payment-methods"
+    ],
+    "listMyTopUps": [
+      "GET",
+      "/premium/top-ups"
+    ],
+    "createTopUp": [
+      "POST",
+      "/premium/top-ups"
+    ],
+    "getMyTopUp": [
+      "GET",
+      "/premium/top-ups/{top_up_id}"
+    ],
+    "markTopUpSent": [
+      "POST",
+      "/premium/top-ups/{top_up_id}/sent"
+    ],
+    "cancelTopUp": [
+      "POST",
+      "/premium/top-ups/{top_up_id}/cancel"
     ]
   },
   "super-admin": {

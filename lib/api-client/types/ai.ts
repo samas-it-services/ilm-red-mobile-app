@@ -387,7 +387,7 @@ export interface paths {
         put?: never;
         /**
          * Approve or deny an assistant
-         * @description The member's answer on the consent page. Session only (never an API key or another assistant). Answers where to send the browser: the client's redirect URI with `code`, `state` and `iss`, or with `error=access_denied`. `library:read` is always granted with approval; `library:private` and `search:history` (planned, v1.430.0) only if listed in `scopes`.
+         * @description The member's answer on the consent page. Session only (never an API key or another assistant). Answers where to send the browser: the client's redirect URI with `code`, `state` and `iss`, or with `error=access_denied`. `library:read` is always granted with approval; `library:private` and `search:history` (planned, v1.438.0) only if listed in `scopes`.
          */
         post: operations["grantAiAgentConsent"];
         delete?: never;
@@ -412,7 +412,7 @@ export interface components {
          */
         AiFeature: "ask" | "summarize" | "explain" | "translate" | "council";
         /**
-         * @description `library:read` and `library:private` are grantable today; `search:history` from v1.430.0; `notes:write` and `ai:spend` are planned.
+         * @description `library:read` and `library:private` are grantable today; `search:history` from v1.438.0; `notes:write` and `ai:spend` are planned.
          * @enum {string}
          */
         AgentScope: "library:read" | "library:private" | "search:history" | "notes:write" | "ai:spend";
@@ -1165,7 +1165,7 @@ export interface components {
          * @description The stable part of a problem. Branch on this, never on `title` or `detail`.
          * @enum {string}
          */
-        ProblemSlug: "unauthorized" | "key_invalid" | "key_revoked" | "key_expired" | "scope_missing" | "not_club_admin" | "club_quota_reached" | "internal_only" | "not_found" | "term_not_found" | "slug_exists" | "edge_would_cycle" | "drop_not_ready" | "needs_text" | "needs_pages" | "needs_translation" | "paper_locked" | "term_has_edges" | "paper_not_in_club" | "revision_required" | "plan_refused" | "duplicate_brief" | "review_forbidden" | "already_reviewed" | "club_required" | "brief_invalid" | "cost_cap_exceeded" | "repair_invalid" | "idempotency_conflict" | "validation_failed" | "unsupported_kind" | "rate_limited" | "extract_rate_limited" | "internal_error" | "forbidden" | "premium_required" | "insufficient_credits" | "reauth_required" | "version_conflict" | "conflict" | "gone" | "payload_too_large" | "unsupported_media_type" | "quote_expired" | "agent_cap_reached" | "lock_held";
+        ProblemSlug: "unauthorized" | "key_invalid" | "key_revoked" | "key_expired" | "scope_missing" | "not_club_admin" | "club_quota_reached" | "internal_only" | "not_found" | "term_not_found" | "slug_exists" | "edge_would_cycle" | "drop_not_ready" | "needs_text" | "needs_pages" | "needs_translation" | "paper_locked" | "term_has_edges" | "paper_not_in_club" | "revision_required" | "plan_refused" | "duplicate_brief" | "review_forbidden" | "already_reviewed" | "club_required" | "brief_invalid" | "cost_cap_exceeded" | "repair_invalid" | "idempotency_conflict" | "validation_failed" | "unsupported_kind" | "rate_limited" | "extract_rate_limited" | "agreement_required" | "agreement_version_stale" | "over_ceiling" | "top_up_limit" | "method_unavailable" | "self_confirm_forbidden" | "internal_error" | "forbidden" | "premium_required" | "insufficient_credits" | "reauth_required" | "version_conflict" | "conflict" | "gone" | "payload_too_large" | "unsupported_media_type" | "quote_expired" | "agent_cap_reached" | "lock_held";
         CreditsProblem: components["schemas"]["Problem"] & {
             balance: components["schemas"]["Credits"];
             required_credits: components["schemas"]["Credits"];
@@ -1184,7 +1184,7 @@ export interface components {
          * @example ar
          */
         LangCode: string;
-        /** @description Credits, rounded by the server to four decimal places. One credit is one US cent of model spend at list price. */
+        /** @description Credits, rounded by the server to four decimal places. One credit is one US dollar of spend at list price ($1 buys 1 credit, before any tax the payment method takes off). */
         Credits: number;
         /**
          * Format: date-time

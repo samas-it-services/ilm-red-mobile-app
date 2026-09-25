@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * The month's headline numbers
-         * @description Revenue, refunds, AI spend at provider cost, gross margin, active premium members and MRR for one month.
+         * @description Gross takings, refunds and net for one month, the credit liability (bought credits not yet spent, across every member), AI spend at provider cost and as billed, the realized margin, and the refund requests that need a decision or are waiting on a processor. Omit `month` for the current month.
          */
         get: operations["financeGetKpis"];
         put?: never;
@@ -33,7 +33,7 @@ export interface paths {
         };
         /**
          * List payments
-         * @description Filter by `status`, `provider` and `since`. Sortable by `created_at` (default, newest first) and `amount`.
+         * @description Newest first. Filter by `status` and `provider`; `q` matches the member's email or the provider's reference.
          */
         get: operations["financeListPayments"];
         put?: never;
@@ -53,7 +53,10 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Get one payment */
+        /**
+         * Get one payment with its receipt lines
+         * @description The payment plus how its amount became credits (gross, tax, discount, credited).
+         */
         get: operations["financeGetPayment"];
         put?: never;
         post?: never;
@@ -94,7 +97,7 @@ export interface paths {
         };
         /**
          * List members' refund requests
-         * @description Filter by `status`. Oldest first by default; sortable by `created_at` and `amount`.
+         * @description Newest first. `status` defaults to `open` (requested or under review); `awaiting_settlement` is approved and waiting on a processor; `all` is everything. Returns `total` for the filter.
          */
         get: operations["financeListRefundRequests"];
         put?: never;
@@ -118,7 +121,7 @@ export interface paths {
         put?: never;
         /**
          * Decline a refund request
-         * @description The reason is shown to the member. To approve, refund the payment with `refund_request_id` set.
+         * @description The reason is shown to the member. Any credits held for the request are released.
          */
         post: operations["financeDeclineRefundRequest"];
         delete?: never;
@@ -200,7 +203,7 @@ export interface paths {
         put?: never;
         /**
          * Grant or remove a member's credits
-         * @description `credits` is signed: positive grants, negative removes. A removal larger than the member's balance is refused with `conflict`; nothing is taken below zero. Granted credits may carry an `expires_at`.
+         * @description `credits` is signed: positive grants, negative removes. Large grants need a second finance approver: the answer is then 202 with `status: awaiting_second_approver` and the `grant_id` to decide with financeDecideCreditGrant. Above the platform's monthly ceiling the grant is refused with `over_ceiling`.
          */
         post: operations["financeAdjustUserCredits"];
         delete?: never;
@@ -281,8 +284,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Reconcile a month against the providers
-         * @description Provider payouts, recorded payments and credits granted, side by side, with every discrepancy found.
+         * Reconcile a month, provider by provider
+         * @description For each payment provider: payments settled in the month against the credit ledger rows they should have produced, ledger rows with no payment behind them, webhook events not yet processed, and checkouts pending for more than an hour. Omit `month` for the current month.
          */
         get: operations["financeGetReconciliation"];
         put?: never;
@@ -494,8 +497,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * The finance audit log
-         * @description Every Finance write, newest first. Filter by `since` and `actor`.
+         * The finance audit trail
+         * @description Newest first. Every finance change, whether made through this API or the older screens.
          */
         get: operations["financeListAudit"];
         put?: never;
@@ -504,6 +507,408 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/finance/manual-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record money that arrived outside checkout
+         * @description For a payment that settled somewhere other than the checkout (a phone order, a sale made in the processor's own dashboard, a bank transfer with no reference). It is recorded exactly as a checkout would record it: the payment, the credit ledger row and the member's bought balance, backdated to `paid_at`. `confirmation` is the idempotency key at the database too: recording the same confirmation twice returns the first record with `already_recorded: true` and 200. Credits are the amount less `tax_rate`, then less `discount_rate` of what remains.
+         */
+        post: operations["financeRecordManualPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/credit-grants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Credit grants waiting for a second approver
+         * @description Large grants need two people. `mine` marks the ones you asked for, which you cannot approve yourself.
+         */
+        get: operations["financeListCreditGrants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/credit-grants/{grant_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                grant_id: components["parameters"]["GrantId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or reject a waiting credit grant
+         * @description The person who asked for the grant cannot decide it (`conflict`).
+         */
+        post: operations["financeDecideCreditGrant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Member credit accounts, with findings
+         * @description The AI Ops › Billing accounts list. `filter` takes a comma list of findings (gap, lost, hold, spent, negative). Sort by email, member, available, allowance, purchased, locked or period_end. `total` is the filtered count, `all` the unfiltered one; `header` carries the finding chips and the monthly reset status.
+         */
+        get: operations["financeListAccounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/accounts/{user_id}/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * A member's credit statement
+         * @description The same statement the member sees, plus the identity panel. Detailed report; raw ids are replaced by public ids.
+         */
+        get: operations["financeGetAccountStatement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/accounts/{user_id}/checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Checks on a member's ledger
+         * @description Whether the stored balance equals what the ledger adds up to, and any gap with its explanation.
+         */
+        get: operations["financeGetAccountChecks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/accounts/{user_id}/gap-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark a ledger gap open, explained or corrected
+         * @description Closing a gap (explained or corrected) needs a written `reason`.
+         */
+        post: operations["financeSetAccountGapStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/accounts/{user_id}/credit-limit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a member's monthly credit limit
+         * @description Refused with `over_ceiling` above the platform's monthly maximum.
+         */
+        put: operations["financeSetCreditLimit"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/billing-agreement/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every version of the billing agreement
+         * @description Newest first, drafts included, with how many members agreed to each.
+         */
+        get: operations["financeListAgreementVersions"];
+        put?: never;
+        /**
+         * Start the next draft
+         * @description There is at most one draft at a time (`conflict` otherwise). A draft is invisible to members until published.
+         */
+        post: operations["financeCreateAgreementDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/billing-agreement/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version: components["parameters"]["AgreementVersion"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit the draft
+         * @description A published version can never change (`conflict`); start a new draft instead.
+         */
+        patch: operations["financeUpdateAgreementDraft"];
+        trace?: never;
+    };
+    "/finance/billing-agreement/versions/{version}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version: components["parameters"]["AgreementVersion"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish the draft
+         * @description From `effective_at` (default now; never in the past) this is the agreement in force, and every member is asked to agree to it before their next payment. Payments already made keep the version they were made under. Published text is frozen.
+         */
+        post: operations["financePublishAgreementVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/billing-agreement/versions/{version}/acceptances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version: components["parameters"]["AgreementVersion"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Who agreed to a version
+         * @description Newest first, with when and from which app, and a fingerprint of the exact text they saw.
+         */
+        get: operations["financeListAgreementAcceptances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/top-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Top-ups by method and status
+         * @description Oldest first; `method` and `status` filters. `total` and `amount_total` are for the filter; `waiting` is every top-up a member says they sent, so screens never add money themselves.
+         */
+        get: operations["financeListTopUps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/top-ups/{top_up_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                top_up_id: components["parameters"]["TopUpId"];
+            };
+            cookie?: never;
+        };
+        /** One top-up */
+        get: operations["financeGetTopUp"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/top-ups/{top_up_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                top_up_id: components["parameters"]["TopUpId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm money received for a manual top-up
+         * @description Manual methods only (Zelle). Credits are what arrived less the tax rate snapshotted on the top-up, recorded exactly as a card payment is (payment, ledger row, bought balance, audit). Refused with `self_confirm_forbidden` when the confirmer is the paying member, and with `over_ceiling` when it would pass the member's monthly ceiling. Allowed from awaiting_payment, sent or expired, since the money is what counts. Confirming twice returns the first result with `already_confirmed: true`. The member is emailed.
+         */
+        post: operations["financeConfirmTopUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/top-ups/{top_up_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                top_up_id: components["parameters"]["TopUpId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a manual top-up as not received */
+        post: operations["financeRejectTopUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/top-ups/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Match pasted bank lines to top-ups
+         * @description Takes lines pasted from the bank's Zelle activity (Bank of America first) and suggests which top-up each belongs to: strong on reference plus amount, weaker on amount plus sender name plus date. Suggestions only; nothing is credited. Unmatched money is listed separately.
+         */
+        post: operations["financeMatchBankLines"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/payment-methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Payment methods and their settings
+         * @description Replaces the single active processor. Several methods can be on at once.
+         */
+        get: operations["financeListPaymentMethods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finance/payment-methods/{method}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                method: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change a payment method's settings
+         * @description A card method cannot be switched on until its processor credentials are verified.
+         */
+        patch: operations["financeUpdatePaymentMethod"];
         trace?: never;
     };
 }
@@ -519,7 +924,7 @@ export interface components {
         /** @example 2026-08 */
         Month: string;
         /** @enum {string} */
-        Provider: "helcim" | "stripe" | "paddle";
+        Provider: "helcim" | "stripe" | "paddle" | "zelle";
         /** @enum {string} */
         PaymentStatus: "pending" | "completed" | "failed" | "cancelled" | "refunded";
         /** @enum {string} */
@@ -544,43 +949,67 @@ export interface components {
         };
         /**
          * @example {
-         *       "month": "2026-08",
+         *       "month": "2026-09",
          *       "revenue": {
-         *         "amount_minor": 1284500,
+         *         "amount_minor": 6000,
          *         "currency": "USD"
          *       },
          *       "refunds": {
-         *         "amount_minor": 23900,
+         *         "amount_minor": 0,
          *         "currency": "USD"
          *       },
-         *       "ai_spend_at_cost": {
-         *         "amount_minor": 311200,
+         *       "net": {
+         *         "amount_minor": 6000,
          *         "currency": "USD"
          *       },
-         *       "gross_margin": {
-         *         "amount_minor": 949400,
+         *       "credit_liability": {
+         *         "amount_minor": 5765,
          *         "currency": "USD"
          *       },
-         *       "gross_margin_pct": 75.3,
-         *       "active_premium_members": 812,
-         *       "mrr": {
-         *         "amount_minor": 971200,
+         *       "ai_cost_at_provider": {
+         *         "amount_minor": 1210,
          *         "currency": "USD"
          *       },
-         *       "generated_at": "2026-09-22T10:00:00Z"
+         *       "ai_billed": {
+         *         "amount_minor": 2890,
+         *         "currency": "USD"
+         *       },
+         *       "realized_margin_pct": 58.1,
+         *       "open_refund_requests": 0,
+         *       "awaiting_settlement": 0,
+         *       "can_manage": true,
+         *       "generated_at": "2026-09-25T10:00:00Z"
          *     }
          */
         Kpis: {
             month: components["schemas"]["Month"];
             revenue: components["schemas"]["Money"];
             refunds: components["schemas"]["Money"];
-            ai_spend_at_cost: components["schemas"]["Money"];
-            gross_margin: components["schemas"]["Money"];
-            /** @description Null when there was no revenue. */
-            gross_margin_pct: number | null;
-            active_premium_members: number;
-            mrr: components["schemas"]["Money"];
+            net: components["schemas"]["Money"];
+            /** @description Bought credits not yet spent, across every member ($1 = 1 credit). */
+            credit_liability: components["schemas"]["Money"];
+            ai_cost_at_provider: components["schemas"]["Money"];
+            ai_billed: components["schemas"]["Money"];
+            /** @description Null when nothing was billed. */
+            realized_margin_pct: number | null;
+            open_refund_requests: number;
+            awaiting_settlement: number;
+            /** @description Whether the caller may make finance changes. */
+            can_manage?: boolean;
+            /** @description Zelle top-ups members say they sent, waiting for Finance. */
+            top_ups_waiting?: {
+                count: number;
+                amount: components["schemas"]["Money"];
+            };
             generated_at: components["schemas"]["Timestamp"];
+        };
+        /** @description How Finance sees a member. Like UserSummary, plus the email (Finance reconciles payments by it). */
+        FinanceMember: {
+            id: components["schemas"]["UserId"];
+            username: string | null;
+            display_name: string;
+            avatar_url?: string | null;
+            email?: string | null;
         };
         /**
          * @example {
@@ -589,44 +1018,81 @@ export interface components {
          *         "id": "user_7Tb3Yr2Qc9Pd",
          *         "username": "sana_reads",
          *         "display_name": "Sana Malik",
-         *         "avatar_url": null
+         *         "avatar_url": null,
+         *         "email": "sana@example.com"
          *       },
          *       "amount": {
-         *         "amount_minor": 1299,
+         *         "amount_minor": 1000,
          *         "currency": "USD"
          *       },
          *       "refunded": {
          *         "amount_minor": 0,
          *         "currency": "USD"
          *       },
-         *       "provider": "stripe",
-         *       "provider_reference": "pi_3PqR7sT2uV",
+         *       "provider": "helcim",
+         *       "provider_reference": "CCMT55HV0W0000RU",
          *       "status": "completed",
-         *       "credits_granted": 1000,
-         *       "plan_id": "plan_3Nc8Vr1Kq6Ty",
+         *       "credits_granted": 7.65,
          *       "receipt_url": null,
-         *       "invoice_id": "inv_4Kd9Ws2Pq7Ra",
-         *       "created_at": "2026-09-01T12:30:00Z",
-         *       "completed_at": "2026-09-01T12:30:04Z"
+         *       "created_at": "2026-08-22T19:00:00Z",
+         *       "completed_at": "2026-08-22T19:00:00Z"
          *     }
          */
         Payment: {
             id: components["schemas"]["PaymentId"];
-            member: components["schemas"]["UserSummary"];
+            member: components["schemas"]["FinanceMember"] | null;
             amount: components["schemas"]["Money"];
             refunded: components["schemas"]["Money"];
-            provider: components["schemas"]["Provider"];
-            /** @description The provider's payment id, for looking it up in their dashboard. */
+            /** @description helcim, stripe or paddle today; zelle from R2. */
+            provider: string;
+            /** @description The provider's payment id, or the confirmation for a manual payment. */
             provider_reference?: string | null;
             status: components["schemas"]["PaymentStatus"];
             credits_granted: components["schemas"]["Credits"];
-            plan_id?: components["schemas"]["PlanId"] | null;
-            /** Format: uri */
             receipt_url?: string | null;
-            invoice_id?: components["schemas"]["InvoiceId"] | null;
             created_at: components["schemas"]["Timestamp"];
             /** Format: date-time */
             completed_at?: string | null;
+        };
+        PaymentDetail: components["schemas"]["Payment"] & {
+            /** @description How the amount became credits. */
+            lines: {
+                gross: components["schemas"]["Money"];
+                tax: components["schemas"]["Money"];
+                tax_rate: number;
+                discount: components["schemas"]["Money"];
+                credited: components["schemas"]["Credits"];
+                note?: string | null;
+                /** @description `manual_reconciliation` for a recorded manual payment. */
+                source?: string | null;
+            };
+        };
+        ManualPaymentCreate: {
+            /** Format: email */
+            member_email: string;
+            /** @description What the member paid, in cents. */
+            amount: components["schemas"]["PositiveMoneyInput"];
+            /** @description The processor or bank confirmation. Recording it twice is a no-op. */
+            confirmation: string;
+            /**
+             * Format: date-time
+             * @description When the money was paid. Default now.
+             */
+            paid_at?: string;
+            /** @description For example 0.10 for 10%. */
+            tax_rate?: number;
+            discount_rate?: number;
+            provider: components["schemas"]["Provider"];
+            note?: string;
+        };
+        ManualPaymentResult: {
+            payment_id: components["schemas"]["PaymentId"];
+            already_recorded: boolean;
+            gross?: components["schemas"]["Money"] | null;
+            tax?: components["schemas"]["Money"] | null;
+            discount?: components["schemas"]["Money"] | null;
+            credited?: number | null;
+            audit: components["schemas"]["AuditStamp"];
         };
         RefundCreate: {
             /** @description Omit for a full refund of what is still refundable. Must be in the payment's currency. */
@@ -665,40 +1131,14 @@ export interface components {
             refund: components["schemas"]["Refund"];
             payment: components["schemas"]["Payment"];
         };
-        /**
-         * @example {
-         *       "id": "rfr_6Lp2Xw9Qa1Md",
-         *       "payment_id": "pay_8Xq2Nc5Vb1Lk",
-         *       "member": {
-         *         "id": "user_7Tb3Yr2Qc9Pd",
-         *         "username": "sana_reads",
-         *         "display_name": "Sana Malik",
-         *         "avatar_url": null
-         *       },
-         *       "claim_type": "failed_processing",
-         *       "requested": {
-         *         "amount_minor": 650,
-         *         "currency": "USD"
-         *       },
-         *       "refundable": {
-         *         "amount_minor": 1299,
-         *         "currency": "USD"
-         *       },
-         *       "reason": "The translation of my book stopped halfway.",
-         *       "status": "requested",
-         *       "decided_at": null,
-         *       "decided_by": null,
-         *       "decision_reason": null,
-         *       "refund_id": null,
-         *       "created_at": "2026-09-21T18:00:00Z"
-         *     }
-         */
         RefundRequest: {
             id: components["schemas"]["RefundRequestId"];
             payment_id: components["schemas"]["PaymentId"];
-            member: components["schemas"]["UserSummary"];
+            member: components["schemas"]["FinanceMember"] | null;
             /** @enum {string} */
             claim_type: "standard" | "error" | "duplicate" | "failed_processing";
+            provider: string;
+            paid: components["schemas"]["Money"];
             requested: components["schemas"]["Money"];
             refundable: components["schemas"]["Money"];
             /** @description The member's own words. */
@@ -706,9 +1146,8 @@ export interface components {
             status: components["schemas"]["RefundRequestStatus"];
             /** Format: date-time */
             decided_at?: string | null;
-            decided_by?: components["schemas"]["UserSummary"] | null;
+            decided_by?: components["schemas"]["FinanceMember"] | null;
             decision_reason?: string | null;
-            refund_id?: components["schemas"]["RefundId"] | null;
             created_at: components["schemas"]["Timestamp"];
         };
         RefundRequestDecline: {
@@ -781,40 +1220,308 @@ export interface components {
             reason: string;
         };
         CreditAdjustment: {
+            /** @description Signed. Positive grants, negative removes. Never zero. */
             credits: components["schemas"]["SignedCredits"] & unknown;
             /** @description Shown to the member in their credit history. */
             reason: components["schemas"]["Reason"];
-            /**
-             * Format: date-time
-             * @description Only for grants. Unused granted credits lapse at this time.
-             */
-            expires_at?: string;
         };
-        /**
-         * @example {
-         *       "user_id": "user_7Tb3Yr2Qc9Pd",
-         *       "credits": 250,
-         *       "balance": 1180.5,
-         *       "expires_at": "2026-12-31T23:59:59Z",
-         *       "audit": {
-         *         "audit_id": "audit_4Tz8Qm1Kc6Wv",
-         *         "at": "2026-09-22T10:10:00Z",
-         *         "actor": {
-         *           "id": "user_4Fq9ZtW1Lm8K",
-         *           "username": "bilgrami",
-         *           "display_name": "Bilal Bilgrami",
-         *           "avatar_url": null
-         *         }
-         *       }
-         *     }
-         */
         CreditAdjustmentResult: {
             user_id: components["schemas"]["UserId"];
             credits: components["schemas"]["SignedCredits"];
-            balance: components["schemas"]["Credits"];
+            /** @enum {string} */
+            status: "applied" | "awaiting_second_approver";
+            grant_id?: components["schemas"]["GrantId"] | null;
+            audit: components["schemas"]["AuditStamp"];
+        };
+        GrantId: string;
+        CreditGrant: {
+            id: components["schemas"]["GrantId"];
+            member: components["schemas"]["FinanceMember"] | null;
+            credits: number;
+            /** @enum {string|null} */
+            bucket?: "allowance" | "purchased" | null;
+            reason?: string | null;
+            note?: string | null;
+            requested_by?: components["schemas"]["FinanceMember"] | null;
+            requested_at: components["schemas"]["Timestamp"];
+            /** @description You asked for it, so you cannot decide it. */
+            mine: boolean;
+        };
+        CreditGrantDecision: {
+            approve: boolean;
+            note?: string;
+        };
+        CreditGrantDecisionResult: {
+            id: components["schemas"]["GrantId"];
+            /** @enum {string} */
+            status: "approved" | "rejected";
+            audit: components["schemas"]["AuditStamp"];
+        };
+        /** @description One member's credit account as the AI Ops billing console shows it. */
+        Account: {
+            member_id: components["schemas"]["UserId"];
+            email?: string | null;
+            name?: string | null;
+            available: components["schemas"]["Credits"];
+            /** @description Can be negative when the allowance went below zero. */
+            available_signed?: number;
+            /** @description This month's allowance left. Can be negative. */
+            allowance: number;
+            purchased: components["schemas"]["Credits"];
+            on_hold: components["schemas"]["Credits"];
+            monthly_credit_limit?: components["schemas"]["Money"] | null;
+            margin_pct?: number | null;
+            /** Format: date-time */
+            period_end?: string | null;
+            ledger_check?: string | null;
+            reconciled_status?: string | null;
+            reset_status?: string | null;
+            findings: {
+                [key: string]: unknown;
+            };
+            gap_explanation?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        AccountPage: {
+            data: components["schemas"]["Account"][];
+            next_cursor: string | null;
+            total: number;
+            all: number;
+            /** @description Finding chips and the monthly reset status. */
+            header: {
+                [key: string]: unknown;
+            };
+        };
+        AccountStatement: {
+            member_id: components["schemas"]["UserId"];
+            statement: {
+                [key: string]: unknown;
+            };
+            identity: {
+                [key: string]: unknown;
+            };
+        };
+        AccountChecks: {
+            member_id: components["schemas"]["UserId"];
+            checks: {
+                [key: string]: unknown;
+            };
+        };
+        GapStatusChange: {
+            /** @enum {string} */
+            status: "open" | "explained" | "corrected";
+            /** @description Required to close a gap. */
+            reason?: string;
+        };
+        GapStatusResult: {
+            member_id: components["schemas"]["UserId"];
+            /** @enum {string} */
+            status: "open" | "explained" | "corrected";
+            gap: components["schemas"]["Money"];
+            audit: components["schemas"]["AuditStamp"];
+        };
+        CreditLimitChange: {
+            limit: components["schemas"]["MoneyInput"];
+        };
+        CreditLimitResult: {
+            user_id: components["schemas"]["UserId"];
+            limit: components["schemas"]["Money"];
+            previous: components["schemas"]["Money"];
+            audit: components["schemas"]["AuditStamp"];
+        };
+        AgreementVersion: {
+            version: number;
+            title: string;
+            summary?: string | null;
+            /** @description The agreement text, in Markdown. */
+            body_md: string;
+            /** @enum {string} */
+            status: "draft" | "published";
+            /** @description The version in force now. */
+            is_current: boolean;
+            /** Format: date-time */
+            effective_at?: string | null;
+            /** Format: date-time */
+            published_at?: string | null;
+            published_by?: components["schemas"]["FinanceMember"] | null;
+            created_at: components["schemas"]["Timestamp"];
+            /** Format: date-time */
+            updated_at?: string | null;
+            acceptances: number;
+        };
+        AgreementDraftCreate: {
+            title: string;
+            body_md: string;
+            /** @description A short plain-language summary shown above the text. */
+            summary?: string;
+        };
+        AgreementDraftPatch: {
+            title?: string;
+            body_md?: string;
+            summary?: string;
+        };
+        AgreementPublish: {
+            /**
+             * Format: date-time
+             * @description Default now. Never in the past.
+             */
+            effective_at?: string;
+        };
+        AgreementVersionChange: {
+            version: components["schemas"]["AgreementVersion"];
+            audit: components["schemas"]["AuditStamp"];
+        };
+        AgreementAcceptance: {
+            member: components["schemas"]["FinanceMember"] | null;
+            accepted_at: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            surface: "web" | "mobile" | "api";
+            app_version?: string | null;
+            /** @description Fingerprint of the exact text the member agreed to. */
+            body_sha256: string;
+        };
+        TopUpId: string;
+        /** @enum {string} */
+        TopUpStatus: "awaiting_payment" | "sent" | "processing" | "completed" | "failed" | "rejected" | "cancelled" | "expired";
+        FinanceTopUp: {
+            id: components["schemas"]["TopUpId"];
+            member: components["schemas"]["FinanceMember"] | null;
+            method: string;
+            status: components["schemas"]["TopUpStatus"];
+            /** @description The memo reference for a manual method, e.g. ILM-7K4QX. */
+            reference?: string | null;
+            amount: components["schemas"]["Money"];
+            tax: components["schemas"]["Money"];
+            tax_rate?: number;
+            /** @description The tax split into state, county and city lines. */
+            tax_lines?: components["schemas"]["TaxLine"][];
+            credits: components["schemas"]["Credits"];
+            agreement_version?: number | null;
+            sender_name?: string | null;
+            member_confirmation?: string | null;
+            /** Format: date-time */
+            sent_at?: string | null;
+            received?: components["schemas"]["Money"] | null;
+            /** Format: date */
+            received_on?: string | null;
+            bank_reference?: string | null;
+            /** @enum {string|null} */
+            reason_code?: "not_received" | "amount_mismatch" | "duplicate" | "other" | null;
+            decided_by?: components["schemas"]["FinanceMember"] | null;
+            /** Format: date-time */
+            decided_at?: string | null;
+            decision_reason?: string | null;
+            payment_id?: components["schemas"]["PaymentId"] | null;
             /** Format: date-time */
             expires_at?: string | null;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        TopUpConfirm: {
+            received: components["schemas"]["PositiveMoneyInput"];
+            /**
+             * Format: date
+             * @description The day the money arrived, from the bank.
+             */
+            received_on: string;
+            bank_reference?: string;
+        };
+        TopUpReject: {
+            /** @enum {string} */
+            reason_code: "not_received" | "amount_mismatch" | "duplicate" | "other";
+            /** @description Shown to the member. */
+            message: string;
+        };
+        FinanceTopUpChange: {
+            top_up: components["schemas"]["FinanceTopUp"];
+            already_confirmed?: boolean;
             audit: components["schemas"]["AuditStamp"];
+        };
+        FinanceTopUpPage: {
+            data: components["schemas"]["FinanceTopUp"][];
+            next_cursor: string | null;
+            total: number;
+            amount_total: components["schemas"]["Money"];
+            waiting: {
+                count: number;
+                amount: components["schemas"]["Money"];
+            };
+        };
+        PaymentMethodChange: {
+            method: components["schemas"]["PaymentMethodSettings"];
+            audit: components["schemas"]["AuditStamp"];
+        };
+        BankLinesMatch: {
+            /** @enum {string} */
+            bank: "bank_of_america";
+            /** @description Lines copied from the bank's Zelle activity. */
+            lines: string;
+        };
+        BankLinesMatchResult: {
+            matches: {
+                line: string;
+                top_up_id: components["schemas"]["TopUpId"];
+                reference?: string;
+                /** @enum {string} */
+                strength: "strong" | "weak";
+                amount?: components["schemas"]["Money"];
+                sender_name?: string | null;
+                /** Format: date */
+                received_on?: string | null;
+            }[];
+            unmatched: {
+                line: string;
+                amount?: components["schemas"]["Money"] | null;
+                sender_name?: string | null;
+                /** Format: date */
+                received_on?: string | null;
+            }[];
+        };
+        PaymentMethodSettings: {
+            method: string;
+            /** @enum {string} */
+            kind: "instant" | "manual";
+            label: string;
+            enabled: boolean;
+            min: components["schemas"]["Money"];
+            max: components["schemas"]["Money"];
+            open_per_member?: number | null;
+            expiry_days?: number | null;
+            tax_rate: number;
+            /** @description The taxes this method collects, in display order. */
+            tax_components?: components["schemas"]["TaxComponent"][];
+            /** @enum {string} */
+            refund_policy: "credits_only";
+            pays_for?: "top_up"[];
+            /** @enum {string} */
+            who?: "signed_in_members" | "premium_members";
+            /** @description Method specific. Zelle: recipient, display_name, qr_payload (the text in the bank's QR code), bank. */
+            settings?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            updated_at?: string | null;
+        };
+        PaymentMethodPatch: {
+            enabled?: boolean;
+            label?: string;
+            min?: components["schemas"]["MoneyInput"];
+            max?: components["schemas"]["PositiveMoneyInput"];
+            open_per_member?: number;
+            expiry_days?: number;
+            tax_rate?: number;
+            /** @description Replace the tax lines (state, county, city). tax_rate becomes their sum; send one or the other. */
+            tax_components?: components["schemas"]["TaxComponent"][];
+            /** @enum {string} */
+            who?: "signed_in_members" | "premium_members";
+            /** @description Changing the Zelle recipient needs the new qr_payload in the same call. */
+            settings?: {
+                recipient?: string;
+                display_name?: string;
+                qr_payload?: string;
+                /** @enum {string} */
+                bank?: "bank_of_america";
+            };
         };
         MonthlyResetRequest: {
             month: components["schemas"]["Month"];
@@ -922,70 +1629,21 @@ export interface components {
             cost_at_list: components["schemas"]["Money"];
             cost_at_provider: components["schemas"]["Money"];
         };
-        /**
-         * @example {
-         *       "month": "2026-08",
-         *       "status": "open",
-         *       "provider_payouts": [
-         *         {
-         *           "provider": "stripe",
-         *           "amount": {
-         *             "amount_minor": 1240100,
-         *             "currency": "USD"
-         *           },
-         *           "fees": {
-         *             "amount_minor": 38100,
-         *             "currency": "USD"
-         *           }
-         *         }
-         *       ],
-         *       "recorded_payments": {
-         *         "amount_minor": 1284500,
-         *         "currency": "USD"
-         *       },
-         *       "credits_granted": 1021400,
-         *       "discrepancies": [
-         *         {
-         *           "type": "missing_payment",
-         *           "provider": "stripe",
-         *           "payment_id": null,
-         *           "provider_reference": "pi_3PqZ1aB7cD",
-         *           "expected": {
-         *             "amount_minor": 1299,
-         *             "currency": "USD"
-         *           },
-         *           "actual": null,
-         *           "detail": "Paid at the provider, no completed payment recorded."
-         *         }
-         *       ],
-         *       "reconciled_at": null,
-         *       "reconciled_by": null
-         *     }
-         */
         Reconciliation: {
             month: components["schemas"]["Month"];
-            /** @enum {string} */
-            status: "open" | "reconciled";
-            provider_payouts: {
-                provider: components["schemas"]["Provider"];
-                amount: components["schemas"]["Money"];
-                fees?: components["schemas"]["Money"];
+            providers: {
+                provider: string;
+                payments_count: number;
+                payments_total: components["schemas"]["Money"];
+                ledger_count: number;
+                ledger_total: components["schemas"]["Money"];
+                /** @description Credit purchases in the ledger with no payment behind them. */
+                orphan_ledger_rows: number;
+                webhook_events?: number;
+                /** @description Verified events not finished; each may be a paid card with no credits. */
+                unprocessed_webhook_events: number;
+                intents_pending_over_1h: number;
             }[];
-            recorded_payments: components["schemas"]["Money"];
-            credits_granted: components["schemas"]["Credits"];
-            discrepancies: {
-                /** @enum {string} */
-                type: "missing_payment" | "missing_payout" | "amount_mismatch" | "credits_mismatch" | "duplicate";
-                provider: components["schemas"]["Provider"];
-                payment_id?: components["schemas"]["PaymentId"] | null;
-                provider_reference?: string | null;
-                expected?: components["schemas"]["Money"] | null;
-                actual?: components["schemas"]["Money"] | null;
-                detail: string;
-            }[];
-            /** Format: date-time */
-            reconciled_at?: string | null;
-            reconciled_by?: components["schemas"]["UserSummary"] | null;
         };
         MarkReconciled: {
             /** @default false */
@@ -1197,45 +1855,14 @@ export interface components {
             url?: string | null;
             issued_at: components["schemas"]["Timestamp"];
         };
-        /**
-         * @example {
-         *       "id": "audit_4Tz8Qm1Kc6Wv",
-         *       "at": "2026-09-22T10:10:00Z",
-         *       "actor": {
-         *         "id": "user_4Fq9ZtW1Lm8K",
-         *         "username": "bilgrami",
-         *         "display_name": "Bilal Bilgrami",
-         *         "avatar_url": null
-         *       },
-         *       "action": "financeAdjustUserCredits",
-         *       "target": {
-         *         "type": "user",
-         *         "id": "user_7Tb3Yr2Qc9Pd"
-         *       },
-         *       "reason": "Goodwill for the stalled translation reported in rfr_6Lp2Xw9Qa1Md.",
-         *       "before": {
-         *         "balance": 930.5
-         *       },
-         *       "after": {
-         *         "balance": 1180.5
-         *       },
-         *       "request_id": "req_9Vx3Kp7Wm2Qa"
-         *     }
-         */
         AuditEntry: {
-            id: components["schemas"]["AuditId"];
             at: components["schemas"]["Timestamp"];
-            actor: components["schemas"]["UserSummary"];
-            /** @description The operationId of the write. */
+            actor: components["schemas"]["FinanceMember"] | null;
+            /** @description The operationId for writes made through this API; older screens use their own names. */
             action: string;
-            target: {
-                type: string;
-                id: string;
-            };
-            reason: string;
-            before?: Record<string, never> | null;
-            after?: Record<string, never> | null;
-            request_id?: string | null;
+            target?: string | null;
+            /** @description The reason and request id for API writes. */
+            detail?: string | null;
         };
         /** @description Every list returns this envelope. `next_cursor` is null on the last page. Lists that can count cheaply also return `total` when asked (each list says so); `total_capped` is true when the count stopped at the list's cap. */
         Page: {
@@ -1279,7 +1906,7 @@ export interface components {
          * @description The stable part of a problem. Branch on this, never on `title` or `detail`.
          * @enum {string}
          */
-        ProblemSlug: "unauthorized" | "key_invalid" | "key_revoked" | "key_expired" | "scope_missing" | "not_club_admin" | "club_quota_reached" | "internal_only" | "not_found" | "term_not_found" | "slug_exists" | "edge_would_cycle" | "drop_not_ready" | "needs_text" | "needs_pages" | "needs_translation" | "paper_locked" | "term_has_edges" | "paper_not_in_club" | "revision_required" | "plan_refused" | "duplicate_brief" | "review_forbidden" | "already_reviewed" | "club_required" | "brief_invalid" | "cost_cap_exceeded" | "repair_invalid" | "idempotency_conflict" | "validation_failed" | "unsupported_kind" | "rate_limited" | "extract_rate_limited" | "internal_error" | "forbidden" | "premium_required" | "insufficient_credits" | "reauth_required" | "version_conflict" | "conflict" | "gone" | "payload_too_large" | "unsupported_media_type" | "quote_expired" | "agent_cap_reached" | "lock_held";
+        ProblemSlug: "unauthorized" | "key_invalid" | "key_revoked" | "key_expired" | "scope_missing" | "not_club_admin" | "club_quota_reached" | "internal_only" | "not_found" | "term_not_found" | "slug_exists" | "edge_would_cycle" | "drop_not_ready" | "needs_text" | "needs_pages" | "needs_translation" | "paper_locked" | "term_has_edges" | "paper_not_in_club" | "revision_required" | "plan_refused" | "duplicate_brief" | "review_forbidden" | "already_reviewed" | "club_required" | "brief_invalid" | "cost_cap_exceeded" | "repair_invalid" | "idempotency_conflict" | "validation_failed" | "unsupported_kind" | "rate_limited" | "extract_rate_limited" | "agreement_required" | "agreement_version_stale" | "over_ceiling" | "top_up_limit" | "method_unavailable" | "self_confirm_forbidden" | "internal_error" | "forbidden" | "premium_required" | "insufficient_credits" | "reauth_required" | "version_conflict" | "conflict" | "gone" | "payload_too_large" | "unsupported_media_type" | "quote_expired" | "agent_cap_reached" | "lock_held";
         AuditId: string;
         /** @description How a person appears anywhere they are named. Never an email. */
         UserSummary: {
@@ -1297,14 +1924,30 @@ export interface components {
             /** @example USD */
             currency: string;
         };
+        /** @description Credits, rounded by the server to four decimal places. One credit is one US dollar of spend at list price ($1 buys 1 credit, before any tax the payment method takes off). */
+        Credits: number;
+        RefundId: string;
         /** @example bilgrami */
         Username: string;
-        /** @description Credits, rounded by the server to four decimal places. One credit is one US cent of model spend at list price. */
-        Credits: number;
-        InvoiceId: string;
-        RefundId: string;
+        /** @description One tax line of a payment with its amount. The lines add up to the payment's tax to the cent (the last line takes any rounding). */
+        TaxLine: {
+            code: string;
+            label: string;
+            rate: number;
+            amount: components["schemas"]["Money"];
+        };
+        /** @description One tax a payment method collects, e.g. California state sales tax 7.25%. The method's tax_rate is the sum of its lines. */
+        TaxComponent: {
+            /** @example ca_state */
+            code: string;
+            /** @example California state sales tax */
+            label: string;
+            /** @example 0.0725 */
+            rate: number;
+        };
         JobId: string;
         OrderId: string;
+        InvoiceId: string;
         FieldError: {
             /**
              * @description Where the problem is, as a JSON Pointer into the request, prefixed with its part.
@@ -1373,6 +2016,9 @@ export interface components {
         };
     };
     parameters: {
+        GrantId: components["schemas"]["GrantId"];
+        AgreementVersion: number;
+        TopUpId: components["schemas"]["TopUpId"];
         PaymentId: components["schemas"]["PaymentId"];
         RefundRequestId: components["schemas"]["RefundRequestId"];
         PremiumRequestId: components["schemas"]["RequestId"];
@@ -1382,24 +2028,24 @@ export interface components {
         MonthPath: components["schemas"]["Month"];
         /** @description Calendar month, `YYYY-MM`. */
         MonthOptional: components["schemas"]["Month"];
-        /** @description Calendar month, `YYYY-MM`. */
-        Month: string;
-        Since: string;
         /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
         Cursor: string;
         /** @description Page size. */
         Limit: number;
-        /** @description A field name, prefixed with `-` for descending. Each list documents the fields it allows. */
-        Sort: string;
         /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
         AuditReason: string;
         /** @description Required on this call because it creates something or spends credits. See IdempotencyKey. */
         IdempotencyKeyRequired: string;
         /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
         IdempotencyKey: string;
+        /** @description A field name, prefixed with `-` for descending. Each list documents the fields it allows. */
+        Sort: string;
         UserId: components["schemas"]["UserId"];
         /** @description When true, return the price of the call and run nothing. */
         Estimate: boolean;
+        Since: string;
+        /** @description Calendar month, `YYYY-MM`. */
+        Month: string;
         /** @description The `ETag` from your last read. A stale value is refused with `version_conflict` (412). */
         IfMatch: string;
     };
@@ -1416,9 +2062,9 @@ export type $defs = Record<string, never>;
 export interface operations {
     financeGetKpis: {
         parameters: {
-            query: {
+            query?: {
                 /** @description Calendar month, `YYYY-MM`. */
-                month: components["parameters"]["Month"];
+                month?: components["parameters"]["MonthOptional"];
             };
             header?: never;
             path?: never;
@@ -1445,13 +2091,11 @@ export interface operations {
             query?: {
                 status?: components["schemas"]["PaymentStatus"];
                 provider?: components["schemas"]["Provider"];
-                since?: components["parameters"]["Since"];
+                q?: string;
                 /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
                 cursor?: components["parameters"]["Cursor"];
                 /** @description Page size. */
                 limit?: components["parameters"]["Limit"];
-                /** @description A field name, prefixed with `-` for descending. Each list documents the fields it allows. */
-                sort?: components["parameters"]["Sort"];
             };
             header?: never;
             path?: never;
@@ -1492,7 +2136,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Payment"];
+                    "application/json": components["schemas"]["PaymentDetail"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -1548,13 +2192,11 @@ export interface operations {
     financeListRefundRequests: {
         parameters: {
             query?: {
-                status?: components["schemas"]["RefundRequestStatus"];
+                status?: "open" | "awaiting_settlement" | "all" | "requested" | "under_review" | "approved" | "denied" | "refunded";
                 /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
                 cursor?: components["parameters"]["Cursor"];
                 /** @description Page size. */
                 limit?: components["parameters"]["Limit"];
-                /** @description A field name, prefixed with `-` for descending. Each list documents the fields it allows. */
-                sort?: components["parameters"]["Sort"];
             };
             header?: never;
             path?: never;
@@ -1767,8 +2409,17 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The adjustment and the member's new balance. */
-            201: {
+            /** @description Applied. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditAdjustmentResult"];
+                };
+            };
+            /** @description Waiting for a second approver. */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1779,7 +2430,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description The removal exceeds the balance (`conflict`), or the key was reused with a different body (`idempotency_conflict`). */
+            /** @description Above the monthly ceiling (`over_ceiling`), or the key was reused with a different body (`idempotency_conflict`). */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1946,9 +2597,9 @@ export interface operations {
     };
     financeGetReconciliation: {
         parameters: {
-            query: {
+            query?: {
                 /** @description Calendar month, `YYYY-MM`. */
-                month: components["parameters"]["Month"];
+                month?: components["parameters"]["MonthOptional"];
             };
             header?: never;
             path?: never;
@@ -2374,12 +3025,7 @@ export interface operations {
     financeListAudit: {
         parameters: {
             query?: {
-                since?: components["parameters"]["Since"];
-                actor?: components["schemas"]["UserId"];
-                /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
-                cursor?: components["parameters"]["Cursor"];
-                /** @description Page size. */
-                limit?: components["parameters"]["Limit"];
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -2387,7 +3033,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description One page of audit entries. */
+            /** @description The newest audit entries. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2400,6 +3046,721 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeRecordManualPayment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+                /** @description Required on this call because it creates something or spends credits. See IdempotencyKey. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyRequired"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualPaymentCreate"];
+            };
+        };
+        responses: {
+            /** @description Already recorded under this confirmation. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualPaymentResult"];
+                };
+            };
+            /** @description Recorded. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManualPaymentResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Above the member's monthly ceiling (`over_ceiling`), or the key was reused with a different body (`idempotency_conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeListCreditGrants: {
+        parameters: {
+            query?: {
+                user_id?: components["schemas"]["UserId"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The waiting grants. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        data?: components["schemas"]["CreditGrant"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeDecideCreditGrant: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+                /** @description Required on this call because it creates something or spends credits. See IdempotencyKey. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyRequired"];
+            };
+            path: {
+                grant_id: components["parameters"]["GrantId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreditGrantDecision"];
+            };
+        };
+        responses: {
+            /** @description Decided. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditGrantDecisionResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Already decided, or you asked for it yourself (`conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeListAccounts: {
+        parameters: {
+            query?: {
+                q?: string;
+                filter?: string;
+                sort?: "email" | "member" | "available" | "allowance" | "purchased" | "locked" | "period_end";
+                dir?: "asc" | "desc";
+                /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Page size. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of accounts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeGetAccountStatement: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The statement. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountStatement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeGetAccountChecks: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path: {
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The checks. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountChecks"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeSetAccountGapStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GapStatusChange"];
+            };
+        };
+        responses: {
+            /** @description Changed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GapStatusResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeSetCreditLimit: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+            };
+            path: {
+                user_id: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreditLimitChange"];
+            };
+        };
+        responses: {
+            /** @description Changed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreditLimitResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Above the platform's monthly maximum (`over_ceiling`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeListAgreementVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The versions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        data?: components["schemas"]["AgreementVersion"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    financeCreateAgreementDraft: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+                /** @description Required on this call because it creates something or spends credits. See IdempotencyKey. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyRequired"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementDraftCreate"];
+            };
+        };
+        responses: {
+            /** @description The new draft. */
+            201: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementVersionChange"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description A draft already exists (`conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeUpdateAgreementDraft: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+            };
+            path: {
+                version: components["parameters"]["AgreementVersion"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementDraftPatch"];
+            };
+        };
+        responses: {
+            /** @description The draft. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementVersionChange"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description That version is published (`conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financePublishAgreementVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+                /** @description Required on this call because it creates something or spends credits. See IdempotencyKey. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyRequired"];
+            };
+            path: {
+                version: components["parameters"]["AgreementVersion"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementPublish"];
+            };
+        };
+        responses: {
+            /** @description Published. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementVersionChange"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Already published (`conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeListAgreementAcceptances: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Page size. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                version: components["parameters"]["AgreementVersion"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of acceptances. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        data?: components["schemas"]["AgreementAcceptance"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeListTopUps: {
+        parameters: {
+            query?: {
+                method?: string;
+                status?: components["schemas"]["TopUpStatus"];
+                /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Page size. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of top-ups. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceTopUpPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeGetTopUp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                top_up_id: components["parameters"]["TopUpId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The top-up. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceTopUp"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    financeConfirmTopUp: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+                /** @description Required on this call because it creates something or spends credits. See IdempotencyKey. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyRequired"];
+            };
+            path: {
+                top_up_id: components["parameters"]["TopUpId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopUpConfirm"];
+            };
+        };
+        responses: {
+            /** @description Confirmed and credited. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceTopUpChange"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Not a manual method, already decided, self-confirmation, or over the ceiling without the override (`conflict`, `over_ceiling`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeRejectTopUp: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                top_up_id: components["parameters"]["TopUpId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopUpReject"];
+            };
+        };
+        responses: {
+            /** @description Rejected. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceTopUpChange"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Already decided (`conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeMatchBankLines: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BankLinesMatch"];
+            };
+        };
+        responses: {
+            /** @description Suggested matches. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankLinesMatchResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    financeListPaymentMethods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The methods. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        data?: components["schemas"]["PaymentMethodSettings"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    financeUpdatePaymentMethod: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Why this change is being made. Stored in the audit log with the actor and the target. */
+                "X-Audit-Reason": components["parameters"]["AuditReason"];
+            };
+            path: {
+                method: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentMethodPatch"];
+            };
+        };
+        responses: {
+            /** @description Changed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentMethodChange"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Card methods cannot be switched on until their processor is connected (`conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             422: components["responses"]["ValidationFailed"];
         };
     };

@@ -735,6 +735,12 @@ export interface components {
             billing?: {
                 [key: string]: unknown;
             } | null;
+            /** @description Whether I must agree to the billing agreement before my next payment (Finance API R1). `required` is false while no agreement is published. Absent on an older server. */
+            billing_agreement?: {
+                current_version: number | null;
+                accepted_version: number | null;
+                required: boolean;
+            };
             /** @description The platform's per-level media protection matrix (public, friends, private, club). */
             media_levels?: {
                 [key: string]: unknown;
@@ -764,7 +770,7 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             reader_level?: string | null;
-            /** @description Keep my search history (planned, v1.430.0). Off by default. */
+            /** @description Keep my search history (planned, v1.438.0). Off by default. */
             search_history?: boolean;
         };
         ReadingPreferences: {
@@ -797,7 +803,7 @@ export interface components {
             home_layout?: {
                 [key: string]: unknown;
             } | null;
-            /** @description Turn search history on or off (planned, v1.430.0). */
+            /** @description Turn search history on or off (planned, v1.438.0). */
             search_history?: boolean;
             /** @description With `search_history=false`, also delete what is saved. Default true. */
             delete_search_history?: boolean;
@@ -1210,7 +1216,7 @@ export interface components {
          * @description The stable part of a problem. Branch on this, never on `title` or `detail`.
          * @enum {string}
          */
-        ProblemSlug: "unauthorized" | "key_invalid" | "key_revoked" | "key_expired" | "scope_missing" | "not_club_admin" | "club_quota_reached" | "internal_only" | "not_found" | "term_not_found" | "slug_exists" | "edge_would_cycle" | "drop_not_ready" | "needs_text" | "needs_pages" | "needs_translation" | "paper_locked" | "term_has_edges" | "paper_not_in_club" | "revision_required" | "plan_refused" | "duplicate_brief" | "review_forbidden" | "already_reviewed" | "club_required" | "brief_invalid" | "cost_cap_exceeded" | "repair_invalid" | "idempotency_conflict" | "validation_failed" | "unsupported_kind" | "rate_limited" | "extract_rate_limited" | "internal_error" | "forbidden" | "premium_required" | "insufficient_credits" | "reauth_required" | "version_conflict" | "conflict" | "gone" | "payload_too_large" | "unsupported_media_type" | "quote_expired" | "agent_cap_reached" | "lock_held";
+        ProblemSlug: "unauthorized" | "key_invalid" | "key_revoked" | "key_expired" | "scope_missing" | "not_club_admin" | "club_quota_reached" | "internal_only" | "not_found" | "term_not_found" | "slug_exists" | "edge_would_cycle" | "drop_not_ready" | "needs_text" | "needs_pages" | "needs_translation" | "paper_locked" | "term_has_edges" | "paper_not_in_club" | "revision_required" | "plan_refused" | "duplicate_brief" | "review_forbidden" | "already_reviewed" | "club_required" | "brief_invalid" | "cost_cap_exceeded" | "repair_invalid" | "idempotency_conflict" | "validation_failed" | "unsupported_kind" | "rate_limited" | "extract_rate_limited" | "agreement_required" | "agreement_version_stale" | "over_ceiling" | "top_up_limit" | "method_unavailable" | "self_confirm_forbidden" | "internal_error" | "forbidden" | "premium_required" | "insufficient_credits" | "reauth_required" | "version_conflict" | "conflict" | "gone" | "payload_too_large" | "unsupported_media_type" | "quote_expired" | "agent_cap_reached" | "lock_held";
         ValidationProblem: components["schemas"]["Problem"] & {
             errors: components["schemas"]["FieldError"][];
         };
