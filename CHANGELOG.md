@@ -20,6 +20,35 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-09-25 | 🚀 feat: Developers and API keys in the app (v1.7.0)
+
+### 📄 Summary
+The ilm.red API is now easy to find from the app. Profile has a "Developers & API keys" row that opens the API keys page on ilm.red. Billing has an "API usage" section listing each of your active keys with its requests in the last 30 days and what it spent this month, with a link to manage keys. About has a "Developers" link to the developer docs.
+
+### 📁 Files Changed
+- `app/(tabs)/profile.tsx` - "Developers & API keys" row (opens ilm.red/developers/keys)
+- `app/(tabs)/billing.tsx` - "API usage" section, shown only when you have active keys
+- `app/about.tsx` - "Developers" link (ilm.red/developers)
+- `hooks/useBilling.ts` - `useMyApiKeys()` (GET /me/api-keys)
+- `lib/api-client/*` - synced from ilm-red-unbound v1.450.0 (adds the /me/api-keys and /me/api-terms operations, finance R5 types)
+
+### 🧠 Rationale
+Keys are made and revoked on the website only: making one means accepting the API terms and the billing agreement, and the secret is shown once. The app shows use and spend and links out, so there is one place to manage keys.
+
+### 🔄 Behavior / Compatibility Implications
+- No new permissions. Uses the same session as the rest of the app.
+- Members without keys see no API usage section.
+
+### 🧪 Testing Recommendations
+- Profile > Developers & API keys opens ilm.red/developers/keys in the in-app browser.
+- Billing with at least one active key: API usage lists it with requests and this month's spend; "Manage keys on ilm.red" opens the keys page.
+- About > Developers opens ilm.red/developers.
+
+### 📌 Follow‑ups
+- None.
+
+---
+
 ## 2026-09-25 | 🚀 feat: Receipts show the three sales tax lines (v1.6.0)
 
 ### 📄 Summary

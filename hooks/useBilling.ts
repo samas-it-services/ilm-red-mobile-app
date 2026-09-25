@@ -247,3 +247,22 @@ export function useTopUpActions() {
 
   return { create, markSent, cancel, acceptAgreement };
 }
+
+// ============================================================================
+// API keys (read-only here: keys are made and revoked on ilm.red/developers/keys)
+// ============================================================================
+
+export type MyApiKeys = ResponseOf<"me", "getMyApiKeys">;
+export type MyApiKey = NonNullable<MyApiKeys["keys"]>[number];
+
+/** My API keys with their use and spend (GET /me/api-keys). Revoked keys are left out. */
+export function useMyApiKeys() {
+  return useQuery({
+    queryKey: [...billingKeys.all, "apiKeys"] as const,
+    queryFn: async (): Promise<MyApiKey[]> => {
+      const out = await ilmApi.call("me", "getMyApiKeys");
+      return (out.keys ?? []).filter((k) => !k.revoked_at);
+    },
+    staleTime: 60_000,
+  });
+}
