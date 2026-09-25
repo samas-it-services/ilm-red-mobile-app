@@ -1,7 +1,7 @@
 name: EAS Release (store builds)
 
-# Store builds for iOS and Android, then submission to App Store Connect (TestFlight) and Google
-# Play. Run by hand from the Actions tab (or the API) when a version is ready to ship.
+# Store builds for Android (and iOS once Apple credentials are set up), then submission to Google
+# Play internal testing (as a draft) and App Store Connect (TestFlight). Run by hand from the Actions tab (or the API) when a version is ready to ship.
 # Needs the EXPO_TOKEN repository secret, and on expo.dev: iOS distribution credentials, an App
 # Store Connect API key, and a Google Play service account key for this project.
 
@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       platform:
-        description: "all, ios or android"
+        description: "android, ios or all (iOS needs Apple credentials on expo.dev first)"
         required: true
-        default: all
+        default: android
       submit:
         description: "Submit to the stores after building (true/false)"
         required: true
