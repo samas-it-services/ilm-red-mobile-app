@@ -996,10 +996,12 @@ export interface components {
          * @example arabian-nights-one-thousand-and-one-nights
          */
         Slug: string;
-        /** @description Every list returns this envelope. `next_cursor` is null on the last page. */
+        /** @description Every list returns this envelope. `next_cursor` is null on the last page. Lists that can count cheaply also return `total` when asked (each list says so); `total_capped` is true when the count stopped at the list's cap. */
         Page: {
             data: unknown[];
             next_cursor: string | null;
+            total?: number;
+            total_capped?: boolean;
         };
         /** @description Where to send a file. PUT the bytes to `upload_url` with the given headers before `expires_at`, then call the confirming endpoint the operation names. This is the one place the client talks to storage directly, and only with this signed URL. */
         UploadTicket: {
@@ -1056,7 +1058,8 @@ export interface components {
         /** @description How a person appears anywhere they are named. Never an email. */
         UserSummary: {
             id: components["schemas"]["UserId"];
-            username: components["schemas"]["Username"];
+            /** @description Null for a member who has not picked a username yet. */
+            username: components["schemas"]["Username"] | null;
             display_name: string;
             /** Format: uri */
             avatar_url?: string | null;

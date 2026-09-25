@@ -336,13 +336,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/oauth/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a token
+         * @description RFC 7009, form-encoded (`token`, optional `token_type_hint`). Always answers 200, whether or not the token existed.
+         */
+        post: operations["revokeAiAgentToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/oauth/authorize-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Who is asking to connect
+         * @description For the consent page at https://ilm.red/connect/authorize. Checks the authorization request exactly as consent will (client, redirect URI, response type, S256 PKCE, resource) and says who is asking. A request that fails here must not be redirected back to the client.
+         */
+        get: operations["getAiAgentAuthorizeInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/oauth/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or deny an assistant
+         * @description The member's answer on the consent page. Session only (never an API key or another assistant). Answers where to send the browser: the client's redirect URI with `code`, `state` and `iss`, or with `error=access_denied`. `library:read` is always granted with approval; `library:private` and `search:history` (planned, v1.430.0) only if listed in `scopes`.
+         */
+        post: operations["grantAiAgentConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
-         * @description An OAuth client id issued by `POST /ai/oauth/register`.
+         * @description An OAuth client id: one issued by `POST /ai/oauth/register`, or the https URL of the client's own Client ID Metadata Document (fetched and checked at authorize time, cached a day).
          * @example client_5Rt8Yp2Wd3Nq
+         * @example https://claude.ai/oauth/claude-code-client-metadata
          */
         AgentClientId: string;
         /**
@@ -350,8 +411,11 @@ export interface components {
          * @enum {string}
          */
         AiFeature: "ask" | "summarize" | "explain" | "translate" | "council";
-        /** @enum {string} */
-        AgentScope: "library:read" | "notes:write" | "ai:spend";
+        /**
+         * @description `library:read` and `library:private` are grantable today; `search:history` from v1.430.0; `notes:write` and `ai:spend` are planned.
+         * @enum {string}
+         */
+        AgentScope: "library:read" | "library:private" | "search:history" | "notes:write" | "ai:spend";
         /**
          * @example {
          *       "feature": "summarize",
@@ -903,6 +967,8 @@ export interface components {
                 client_uri?: string | null;
                 /** Format: uri */
                 logo_uri?: string | null;
+                /** @description For a metadata-document client, the host that published it (for example claude.ai). */
+                verified_domain?: string | null;
             };
             scopes: components["schemas"]["AgentScope"][];
             monthly_cap_credits: components["schemas"]["Credits"];
@@ -1021,10 +1087,38 @@ export interface components {
             scope: string;
             agent_id: components["schemas"]["AgentId"];
         };
+        AgentAuthorizeInfo: {
+            client: {
+                name: string;
+                client_uri?: string | null;
+                logo_uri?: string | null;
+                /** @description The host that published a metadata-document client. */
+                verified_by?: string | null;
+            };
+            /** @description Where the browser goes after the member answers. Show it. */
+            redirect_host: string;
+            /** @description True for a loopback redirect (a program on this computer). */
+            redirect_is_local: boolean;
+            requested_scopes: components["schemas"]["AgentScope"][];
+        };
+        AgentConsent: {
+            approve: boolean;
+            scopes?: ("library:read" | "library:private")[];
+            client_id: components["schemas"]["AgentClientId"];
+            redirect_uri: string;
+            /** @constant */
+            response_type: "code";
+            code_challenge: string;
+            /** @constant */
+            code_challenge_method: "S256";
+            scope?: string;
+            state?: string;
+            resource?: string;
+        };
         /** @description RFC 6749 section 5.2 error. */
         OAuthError: {
             /** @enum {string} */
-            error: "invalid_request" | "invalid_client" | "invalid_grant" | "unauthorized_client" | "unsupported_grant_type" | "invalid_scope";
+            error: "invalid_request" | "invalid_client" | "invalid_grant" | "unauthorized_client" | "unsupported_grant_type" | "invalid_scope" | "invalid_redirect_uri" | "invalid_client_metadata" | "slow_down" | "server_error";
             error_description?: string;
         };
         /** @example book_2mCq1kZ9xTb4 */
@@ -1033,10 +1127,12 @@ export interface components {
         ClubId: string;
         /** @example post_3Kf9Wq1Rb7Zc */
         PostId: string;
-        /** @description Every list returns this envelope. `next_cursor` is null on the last page. */
+        /** @description Every list returns this envelope. `next_cursor` is null on the last page. Lists that can count cheaply also return `total` when asked (each list says so); `total_capped` is true when the count stopped at the list's cap. */
         Page: {
             data: unknown[];
             next_cursor: string | null;
+            total?: number;
+            total_capped?: boolean;
         };
         /** @description RFC 9457 problem document. Branch on `slug` (also the last segment of `type`), show `title`, quote `request_id`. */
         Problem: {
@@ -1102,7 +1198,8 @@ export interface components {
         /** @description How a person appears anywhere they are named. Never an email. */
         UserSummary: {
             id: components["schemas"]["UserId"];
-            username: components["schemas"]["Username"];
+            /** @description Null for a member who has not picked a username yet. */
+            username: components["schemas"]["Username"] | null;
             display_name: string;
             /** Format: uri */
             avatar_url?: string | null;
@@ -1825,7 +1922,15 @@ export interface operations {
                     "application/json": components["schemas"]["AgentClient"];
                 };
             };
-            422: components["responses"]["ValidationFailed"];
+            /** @description Metadata refused (`invalid_redirect_uri`, `invalid_client_metadata`), in the RFC 7591 error shape. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthError"];
+                };
+            };
             429: components["responses"]["RateLimited"];
         };
     };
@@ -1874,6 +1979,110 @@ export interface operations {
                 };
             };
             429: components["responses"]["RateLimited"];
+        };
+    };
+    revokeAiAgentToken: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": {
+                    token: string;
+                    /** @enum {string} */
+                    token_type_hint?: "access_token" | "refresh_token";
+                    client_id?: components["schemas"]["AgentClientId"];
+                };
+            };
+        };
+        responses: {
+            /** @description Done. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Malformed request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthError"];
+                };
+            };
+        };
+    };
+    getAiAgentAuthorizeInfo: {
+        parameters: {
+            query: {
+                client_id: components["schemas"]["AgentClientId"];
+                redirect_uri: string;
+                response_type: "code";
+                code_challenge: string;
+                code_challenge_method: "S256";
+                scope?: string;
+                state?: string;
+                resource?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The client and what it asks for. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentAuthorizeInfo"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    grantAiAgentConsent: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentConsent"];
+            };
+        };
+        responses: {
+            /** @description Where to send the browser next. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uri */
+                        redirect_to: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
         };
     };
 }

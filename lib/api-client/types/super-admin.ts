@@ -297,6 +297,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/super-admin/docs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the design documents
+         * @description Product and technical design documents (PRDs and TDDs) that are published to super admins. Only documents on the gateway's allowlist appear; the text ships inside the gateway image, never in the website's code, so nobody else can read it by opening the site's files.
+         */
+        get: operations["superAdminListDocs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/super-admin/docs/{doc_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doc_id: components["schemas"]["DesignDocId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Read one design document
+         * @description The document's Markdown, as committed at the version the gateway was built from. Mermaid blocks are returned as text; the screen draws them.
+         */
+        get: operations["superAdminGetDoc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -779,6 +821,25 @@ export interface components {
             after?: Record<string, never> | null;
             request_id: string;
         };
+        /**
+         * @description A stable name for the document, for example `book-reader-prd`.
+         * @example book-reader-prd
+         */
+        DesignDocId: string;
+        DesignDocSummary: {
+            id: components["schemas"]["DesignDocId"];
+            title: string;
+            /** @description For grouping, for example `Reader` or `API`. */
+            area: string;
+            /** @enum {string} */
+            kind: "prd" | "tdd" | "reference" | "plan";
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        DesignDoc: components["schemas"]["DesignDocSummary"] & {
+            markdown: string;
+            /** @description The release the gateway was built from, for example `1.402.0`. */
+            version: string;
+        };
         /** @description RFC 9457 problem document. Branch on `slug` (also the last segment of `type`), show `title`, quote `request_id`. */
         Problem: {
             /**
@@ -794,10 +855,12 @@ export interface components {
         };
         /** @example user_4Fq9ZtW1Lm8K */
         UserId: string;
-        /** @description Every list returns this envelope. `next_cursor` is null on the last page. */
+        /** @description Every list returns this envelope. `next_cursor` is null on the last page. Lists that can count cheaply also return `total` when asked (each list says so); `total_capped` is true when the count stopped at the list's cap. */
         Page: {
             data: unknown[];
             next_cursor: string | null;
+            total?: number;
+            total_capped?: boolean;
         };
         /** @example club_7Kd0Wq2Rf1Ab */
         ClubId: string;
@@ -819,7 +882,8 @@ export interface components {
         /** @description How a person appears anywhere they are named. Never an email. */
         UserSummary: {
             id: components["schemas"]["UserId"];
-            username: components["schemas"]["Username"];
+            /** @description Null for a member who has not picked a username yet. */
+            username: components["schemas"]["Username"] | null;
             display_name: string;
             /** Format: uri */
             avatar_url?: string | null;
@@ -1519,6 +1583,65 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             422: components["responses"]["ValidationFailed"];
+        };
+    };
+    superAdminListDocs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The documents, grouped by area. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DesignDocSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    superAdminGetDoc: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-None-Match"?: string;
+            };
+            path: {
+                doc_id: components["schemas"]["DesignDocId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The document. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesignDoc"];
+                };
+            };
+            /** @description Unchanged since the `ETag` sent. No body. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

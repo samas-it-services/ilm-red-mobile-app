@@ -20,6 +20,36 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## 2026-09-25 | 🚀 feat: Search books and pages on the new library search, search history, my book counts (v1.4.0)
+
+### 📄 Summary
+Search now uses the same engine as ilm.red and assistants (`GET /v1/search`). It finds books by title, author and tags, and words inside pages, in the original and in every saved translation, Urdu included (letter shapes and vowel marks do not matter). Results come 20 at a time, up to 200, in two lists: Books and In pages. When nothing matches, the server says why, for example that a book has Urdu text and the word should be typed in Urdu script. The Library tab shows how many books I have, by who can see them. Settings has a search history switch (off by default), with the list, delete one and delete all. The retired Azure `/search` endpoints are no longer called.
+
+### 📁 Files Changed
+- `hooks/useSearch.ts` - rewritten on the typed client: `useLibrarySearch` (cursor paging), `useMyLibraryCounts`, search history hooks, snippet helpers
+- `components/GlobalSearch.tsx` - Books / In pages tabs, matched words in bold, right-to-left snippets, server hint when empty, recent searches from my history when it is on (this phone's list otherwise)
+- `components/SearchHistorySettings.tsx` (new) - switch, recent list, delete one, delete all; turning off asks, delete is the default
+- `app/profile/edit.tsx` - shows the search history card
+- `app/(tabs)/library.tsx` - "My books" counts line from `GET /v1/me/library`
+- `lib/api-client/` - synced from ilm-red-unbound (new search, library and history operations)
+
+### 🧠 Rationale
+Searching in the app went to the retired Azure API. Members also asked assistants how many books they have and got wrong numbers; the app now shows the same counts the API gives everyone.
+
+### 🔄 Behavior / Compatibility Implications
+- Tapping a result opens it on ilm.red (in-app browser), at the matching page and language, until the book and reader screens move to the new API.
+- Searches are saved only when the member turned search history on.
+
+### 🧪 Testing Recommendations
+- Search "dastan", then "داستان": the first explains Urdu script, the second finds Arabian Nights pages.
+- Turn history on in Settings, search twice, reopen search: both appear under Your search history. Turn it off, choose delete: the list is empty.
+- Library tab: the counts line matches ilm.red My Bookshelf.
+
+### 📌 Follow‑ups
+- Open books in the app once `app/book/[id].tsx` and the reader use the new API.
+
+---
+
 ## 2026-09-22 | 🚀 feat: Sign in with Google and Apple, same accounts as ilm.red (v1.3.0)
 
 ### 📄 Summary

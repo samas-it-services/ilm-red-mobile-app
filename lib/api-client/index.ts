@@ -4,3 +4,5 @@ export type { ApiClient, ClientOptions, FieldError, OperationId, RequestOf, Resp
 export { OPERATIONS, SURFACE_HOST } from './operations';
 export type { Surface } from './operations';
 export type { SurfaceOperations } from './surfaces';
+export { publicId, uuidOf } from './ids';
+export type { PublicIdKind } from './ids';

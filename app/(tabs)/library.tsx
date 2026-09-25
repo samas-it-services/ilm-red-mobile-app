@@ -19,6 +19,8 @@ import * as Haptics from "expo-haptics";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useInfiniteBooks, useFavorites, useToggleFavorite } from "@/hooks/useBooks";
 import { useCategories, type BookCategory } from "@/hooks/useCategories";
+import { useMyLibraryCounts } from "@/hooks/useSearch";
+import { useAuth } from "@/providers/AuthProvider";
 import { BookList } from "@/components/BookList";
 import { CategoryList } from "@/components/CategoryChip";
 
@@ -53,6 +55,10 @@ export default function LibraryScreen() {
     q: searchQuery || undefined,
     category: selectedCategory || undefined,
   });
+
+  // My books by who can see them, from api.ilm.red (the same numbers assistants give).
+  const { isAuthenticated } = useAuth();
+  const { data: myCounts } = useMyLibraryCounts(isAuthenticated);
 
   const { data: favoritesData } = useFavorites();
   const toggleFavorite = useToggleFavorite();
@@ -133,6 +139,14 @@ export default function LibraryScreen() {
           </TouchableOpacity>
         </View>
 
+        {myCounts && (
+          <Text style={[styles.countsLine, { color: colors.muted }]}>
+            {`My books: ${myCounts.total} · ${myCounts.private?.books ?? 0} private · ${myCounts.public?.books ?? 0} public`}
+            {myCounts.members?.books ? ` · ${myCounts.members.books} members only` : ""}
+            {myCounts.shared?.books ? ` · ${myCounts.shared.books} shared` : ""}
+          </Text>
+        )}
+
         {/* Search Bar */}
         <View
           style={[
@@ -210,6 +224,10 @@ export default function LibraryScreen() {
 // ============================================================================
 
 const styles = StyleSheet.create({
+  countsLine: {
+    fontSize: 13,
+    marginBottom: 8,
+  },
   container: {
     flex: 1,
   },

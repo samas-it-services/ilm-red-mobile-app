@@ -205,6 +205,18 @@ export const OPERATIONS = {
     "exchangeAiAgentToken": [
       "POST",
       "/ai/oauth/token"
+    ],
+    "revokeAiAgentToken": [
+      "POST",
+      "/ai/oauth/revoke"
+    ],
+    "getAiAgentAuthorizeInfo": [
+      "GET",
+      "/ai/oauth/authorize-info"
+    ],
+    "grantAiAgentConsent": [
+      "POST",
+      "/ai/oauth/consent"
     ]
   },
   "blog": {
@@ -362,6 +374,14 @@ export const OPERATIONS = {
       "GET",
       "/books/{book_id}/pages"
     ],
+    "getBookReadiness": [
+      "GET",
+      "/books/{book_id}/readiness"
+    ],
+    "getMedia": [
+      "GET",
+      "/media/{token}"
+    ],
     "getBookPageText": [
       "GET",
       "/books/{book_id}/pages/{n}/text"
@@ -417,6 +437,38 @@ export const OPERATIONS = {
     "reportBook": [
       "POST",
       "/books/{book_id}/reports"
+    ],
+    "listSimilarBooks": [
+      "GET",
+      "/books/{book_id}/similar"
+    ],
+    "recordBookView": [
+      "POST",
+      "/books/{book_id}/views"
+    ],
+    "createBookDownload": [
+      "POST",
+      "/books/{book_id}/download"
+    ],
+    "streamBookEvents": [
+      "GET",
+      "/books/{book_id}/events"
+    ],
+    "listPageFlags": [
+      "GET",
+      "/books/{book_id}/pages/{n}/flags"
+    ],
+    "flagPageText": [
+      "POST",
+      "/books/{book_id}/pages/{n}/flags"
+    ],
+    "defineWord": [
+      "GET",
+      "/words/{word}/definition"
+    ],
+    "pronounceWord": [
+      "GET",
+      "/words/{word}/pronunciation"
     ]
   },
   "clubs": {
@@ -930,6 +982,10 @@ export const OPERATIONS = {
       "POST",
       "/me/export"
     ],
+    "createMyDatabaseSession": [
+      "POST",
+      "/me/database-session"
+    ],
     "getMyEntitlements": [
       "GET",
       "/me/entitlements"
@@ -986,6 +1042,10 @@ export const OPERATIONS = {
       "DELETE",
       "/me/notes/{note_id}"
     ],
+    "streamMyEvents": [
+      "GET",
+      "/me/events"
+    ],
     "listMyNotifications": [
       "GET",
       "/me/notifications"
@@ -993,6 +1053,26 @@ export const OPERATIONS = {
     "markMyNotificationsRead": [
       "POST",
       "/me/notifications/read"
+    ],
+    "getMyBookMarks": [
+      "GET",
+      "/me/book-marks"
+    ],
+    "getMyLibrary": [
+      "GET",
+      "/me/library"
+    ],
+    "listMySearches": [
+      "GET",
+      "/me/searches"
+    ],
+    "clearMySearches": [
+      "DELETE",
+      "/me/searches"
+    ],
+    "deleteMySearch": [
+      "DELETE",
+      "/me/searches/{search_id}"
     ],
     "getMyStats": [
       "GET",
@@ -1013,6 +1093,50 @@ export const OPERATIONS = {
     "listMyReports": [
       "GET",
       "/me/reports"
+    ],
+    "getMyReadingSettings": [
+      "GET",
+      "/me/books/{book_id}/reading-settings"
+    ],
+    "saveMyReadingSettings": [
+      "PATCH",
+      "/me/books/{book_id}/reading-settings"
+    ],
+    "watchBook": [
+      "PUT",
+      "/me/watches/{book_id}"
+    ],
+    "unwatchBook": [
+      "DELETE",
+      "/me/watches/{book_id}"
+    ],
+    "setBookLabel": [
+      "PUT",
+      "/me/labels/{book_id}"
+    ],
+    "clearBookLabel": [
+      "DELETE",
+      "/me/labels/{book_id}"
+    ],
+    "listMyReaderProfiles": [
+      "GET",
+      "/me/reader-profiles"
+    ],
+    "recordMyActivity": [
+      "POST",
+      "/me/activity"
+    ],
+    "completeMyOnboarding": [
+      "POST",
+      "/me/onboarding"
+    ],
+    "listMyStarterBooks": [
+      "GET",
+      "/me/starter-shelf"
+    ],
+    "addBooksToMyShelf": [
+      "POST",
+      "/me/shelf/{shelf}/items"
     ]
   },
   "ops": {
@@ -1311,6 +1435,14 @@ export const OPERATIONS = {
     "superAdminListAudit": [
       "GET",
       "/super-admin/audit"
+    ],
+    "superAdminListDocs": [
+      "GET",
+      "/super-admin/docs"
+    ],
+    "superAdminGetDoc": [
+      "GET",
+      "/super-admin/docs/{doc_id}"
     ]
   }
 } as const;

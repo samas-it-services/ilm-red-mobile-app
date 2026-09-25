@@ -19,6 +19,7 @@ import * as Haptics from "expo-haptics";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { useUpdateProfile, UpdateProfileRequest, UserExtraData } from "@/hooks/useProfile";
+import { SearchHistorySettings } from "@/components/SearchHistorySettings";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -351,6 +352,9 @@ export default function EditProfileScreen() {
             <Text style={styles.saveButtonText}>Save Changes</Text>
           )}
         </TouchableOpacity>
+
+        {/* Saves on change, separate from the form above. */}
+        <SearchHistorySettings />
       </ScrollView>
     </>
   );

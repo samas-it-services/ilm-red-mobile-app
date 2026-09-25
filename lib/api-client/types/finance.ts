@@ -1237,10 +1237,12 @@ export interface components {
             after?: Record<string, never> | null;
             request_id?: string | null;
         };
-        /** @description Every list returns this envelope. `next_cursor` is null on the last page. */
+        /** @description Every list returns this envelope. `next_cursor` is null on the last page. Lists that can count cheaply also return `total` when asked (each list says so); `total_capped` is true when the count stopped at the list's cap. */
         Page: {
             data: unknown[];
             next_cursor: string | null;
+            total?: number;
+            total_capped?: boolean;
         };
         /** @description RFC 9457 problem document. Branch on `slug` (also the last segment of `type`), show `title`, quote `request_id`. */
         Problem: {
@@ -1282,7 +1284,8 @@ export interface components {
         /** @description How a person appears anywhere they are named. Never an email. */
         UserSummary: {
             id: components["schemas"]["UserId"];
-            username: components["schemas"]["Username"];
+            /** @description Null for a member who has not picked a username yet. */
+            username: components["schemas"]["Username"] | null;
             display_name: string;
             /** Format: uri */
             avatar_url?: string | null;

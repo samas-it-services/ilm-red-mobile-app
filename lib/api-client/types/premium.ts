@@ -1084,10 +1084,12 @@ export interface components {
             detail?: string;
             request_id: string;
         };
-        /** @description Every list returns this envelope. `next_cursor` is null on the last page. */
+        /** @description Every list returns this envelope. `next_cursor` is null on the last page. Lists that can count cheaply also return `total` when asked (each list says so); `total_capped` is true when the count stopped at the list's cap. */
         Page: {
             data: unknown[];
             next_cursor: string | null;
+            total?: number;
+            total_capped?: boolean;
         };
         /** @example book_2mCq1kZ9xTb4 */
         BookId: string;

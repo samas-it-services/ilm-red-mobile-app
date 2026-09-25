@@ -14,6 +14,10 @@ export interface paths {
         /**
          * Browse the catalog
          * @description Public books to anyone. Signed-in callers also get members books, their own books and books shared with them. Filter by `category`, `lang` (the book's original language or any language it has text in) and a free-text `q` (fuzzy on title, author and description; typos tolerated). Sortable by `uploaded_at` (default, newest first), `title`, `view_count`, `rating` and `featured_at`; when `q` is present and no `sort` is given, results come in relevance order.
+         *
+         *     `q` follows the library query language and matching rules of `GET /search` (whole words rank above word parts, Urdu and Arabic letter shapes and vowel marks are folded); from v1.430.0 it runs on `search_books_v2`, before that it was a plain substring match.
+         *
+         *     `owner=me` (planned, v1.430.0) lists only the caller's own uploads; with it, `visibility` narrows to one visibility and `include_total=true` adds `total` (the same number the bookshelf shows, taken-down books excluded). `fields=summary` returns slim rows (`BookSummary`) for agents and pickers.
          */
         get: operations["listBooks"];
         put?: never;
@@ -97,6 +101,9 @@ export interface paths {
         /**
          * Get a book
          * @description One round trip for the reader. `include=pages` adds the page count's first window of page images (up to 10 pages starting at the caller's last page, or page 1); `include=progress` adds the caller's reading progress (null for anonymous callers). Either include makes the response caller-specific (`Cache-Control: private, no-cache`).
+         *     Planned includes, so the book page and the reader open with one call each: `include=mine` adds `mine` (favorite, watching, label, my rating and my reader settings for this book; null when anonymous), `include=media` adds `media` (watermark, cache rule, encryption and, for readers, the content key), and `include=paper` adds `paper` for research papers (null otherwise). The book page asks for `mine,paper`; the reader asks for `pages,progress,mine,media`.
+         *     `page` (v1.405.0) centres the included page window on that page (two pages before it, seven after), so a deep link opens with its own page already signed; without it the window starts at the caller's last page.
+         *     For the book page's progress strip (v1.429.0), in the same round trip: `include=marks` adds `marks`, the pages where I left a bookmark or a note (null when anonymous); `include=resume` adds `progress.snippet`, the first words of the page I stopped on (it implies `progress`); `include=download` fills `viewer.can_download`, so the page knows whether to offer Download without asking anything else.
          */
         get: operations["getBook"];
         put?: never;
@@ -181,6 +188,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/books/{book_id}/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Is the book ready to open
+         * @description Whether the reader can open this book yet. A PDF is read as page images rendered after upload; while that runs the state is `preparing`, with `pages_ready` of `pages_total` (null until rendering starts; `queued` is true while it waits its turn). `ready` means open it. `unavailable` means rendering failed and left no pages: offer the original file. Poll every few seconds while `preparing`; stop at any other state.
+         */
+        get: operations["getBookReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open an image link
+         * @description Every image URL the API returns (covers, page images) is a link of this form. It answers `302` to the file while the link is valid; after `expires_at` it answers `404` and the client asks for the page again. Links carry no credentials and no ids; they are safe to put straight into an `<img>` tag. Covers of public books never expire and may be cached.
+         */
+        get: operations["getMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/books/{book_id}/pages/{n}/text": {
         parameters: {
             query?: never;
@@ -216,7 +265,7 @@ export interface paths {
         };
         /**
          * Text of a range of pages
-         * @description Text for pages `from` to `to` (at most 50) in `lang`, with the same fallback rule as a single page: when the book has no text in `lang` the original comes back with `fallback: true` and `available_langs`. Pages without text yet are listed with `text: null`.
+         * @description Text for pages `from` to `to` (at most 50) in `lang`, with the same fallback rule as a single page: when the book has no text in `lang` the original comes back with `fallback: true` and `available_langs`. Pages without text yet are listed with `text: null`. `view=snippet` returns a short preview of each page instead (at most 12 pages), for cards.
          */
         get: operations["getBookText"];
         put?: never;
@@ -261,6 +310,7 @@ export interface paths {
         /**
          * Narration tracks with playable URLs
          * @description Narration for the book in `lang` (default: the original language), one track per page, in page order. Give `page` for a single page's track(s); otherwise page through with `cursor`. URLs are signed and expire after 60 minutes; ask again for fresh ones. A track marked `stale` was recorded before the page text was last corrected.
+         *     `view=index` returns every track of the book in one response (all languages unless `lang` is given) with `url: null` and the sentence `segments`, plus `rejected`: the pages staff rejected per kind and language, which players skip. The reader loads the index once per open and asks for playable links page by page (`page`, optionally `voice`).
          */
         get: operations["listBookAudio"];
         put?: never;
@@ -302,7 +352,11 @@ export interface paths {
         };
         /**
          * Search the whole library
-         * @description Matches books (title, author, description) and the text of their pages, in the books the caller can read. Each hit is either a `book` hit or a `page` hit with a snippet; matched words in `snippet` are wrapped in `<mark>` and `</mark>` and nothing else is HTML. Ordered by relevance. `kind` narrows to one hit type.
+         * @description One search for the website, the apps, partners and assistants (SEARCH_PRD / SEARCH_TDD). Matches books (title, subtitle, author, description, tags, with typo and sound-alike matches), the text of their pages and every saved translation, and, with `kind`, authors, people, clubs and questions. Only books the caller may see appear; page hits come only from books the caller may read, and for anonymous callers from public books (snippet only, `can_read: false`). Assistants without `library:private` see public books only.
+         *
+         *     Query language: plain words (all must match, any order), `"exact phrase"`, `field:term` (`title`, `author`, `tag`, `isbn`, `term`, `domain`), `OR`, `-exclude`. Matching: words of 4 or more letters also match longer words starting with them, English words also match their stem (story, stories), Urdu and Arabic letter shapes are folded (ي ی, ك ک, ه ہ), vowel marks, tatweel and joiners are ignored, Urdu punctuation separates words, Latin case and accents are ignored. Phrases match exactly. Malformed syntax degrades to plain words, never an error.
+         *
+         *     Ordered by relevance, 20 per page, at most 200 results (`total` is exact up to 200; `total_capped` is true beyond and `next_cursor` is null after 200). An empty or capped answer carries a `hint`. Snippets mark matched words with `<mark>` and `</mark>`; nothing else is HTML. Page hits in a translation link to that page in that language.
          */
         get: operations["searchLibrary"];
         put?: never;
@@ -324,7 +378,7 @@ export interface paths {
         };
         /**
          * Search inside one book
-         * @description Page hits with snippets, in page order. `lang` searches that translation (default: the original text). Snippets mark matched words with `<mark>` and `</mark>`. `match_count` on each hit lets the reader cycle through matches on the page.
+         * @description Page hits with snippets, in page order. `lang` searches that translation (default: the original text); `lang=all` (planned, v1.430.0) searches the original and every saved translation, each hit keeping its `lang`. Snippets mark matched words with `<mark>` and `</mark>`. `match_count` on each hit lets the reader cycle through matches on the page. Matching follows `GET /search` (word forms, Urdu and Arabic letter shapes, vowel marks). An empty answer carries a `hint` (for example, the book has Urdu text and the query was in Latin letters).
          */
         get: operations["searchBook"];
         put?: never;
@@ -454,6 +508,168 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/books/{book_id}/similar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Books like this one
+         * @description Up to `limit` books the caller may see that share this book's category, language or tags, best match first. Same card shape as the catalog. Public and caller-independent for anonymous callers (edge cached); a signed-in caller also gets books shared with them.
+         */
+        get: operations["listSimilarBooks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/books/{book_id}/views": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Count a view of a book
+         * @description Call once when the book page or the reader opens. The server counts at most one view per caller (or anonymous device) per book per 30 minutes, so retries and reloads are safe. Replaces the book-view function the site called directly. Answers with the views counted but not yet folded into `view_count`, so a page can show the fresh total at once.
+         */
+        post: operations["recordBookView"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/books/{book_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get a link to download the original file
+         * @description A short-lived signed link to the uploaded file (PDF, EPUB, TXT or MOBI). Only callers the server allows to download get one: the owner, staff, and readers of books whose owner turned downloads on. `viewer.can_download` on the book says in advance whether this will work. The browser never sees a bucket name or a storage path.
+         */
+        post: operations["createBookDownload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/books/{book_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Live changes to a book (server-sent events)
+         * @description A `text/event-stream` that stays open while the book page or reader is on screen and replaces the database realtime channels the site used directly. Events: `pages_changed` (page images regenerated; refetch the window), `text_changed` (a page's text or translation changed; refetch that page), `audio_ready` (a narration track finished), `processing` (upload pipeline progress, owner only). Each event carries only ids and revisions, never content. Send `Last-Event-ID` to resume. The server sends a comment every 25 seconds to keep proxies from closing the stream. Clients that cannot hold a stream poll `GET /books/{book_id}` with `If-None-Match` instead. Today the stream relays the two signals the site already broadcasts: `invalidate` (the book's content changed; `keys` names the caches to drop) and, for signed-in readers, `activity` (a new event in the book's activity feed, with the row as the reader is allowed to see it). Authenticate with the usual `Authorization` header (read the stream with `fetch`).
+         */
+        get: operations["streamBookEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/books/{book_id}/pages/{n}/flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+                /** @description 1-based page number. */
+                n: components["parameters"]["PageNumber"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Open and settled flags on a page
+         * @description The status of the latest flag on each sentence of the page, in one language (default the original text). Statuses only: never the reporter or the text. Readers see them as badges in listen mode; changes also arrive as `flag` events on `streamBookEvents`.
+         */
+        get: operations["listPageFlags"];
+        put?: never;
+        /**
+         * Flag a word or sentence on a page
+         * @description From the reader: a wrong word, a mispronounced word in narration, or a bad sentence translation, pinned to a page and (optionally) a sentence and word. Lighter than `reportBook`; goes to the library team's review queue.
+         */
+        post: operations["flagPageText"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/words/{word}/definition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The word as it appears on the page, URL-encoded. One word or a short phrase. */
+                word: components["parameters"]["Word"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Define a word tapped in the reader
+         * @description A short dictionary entry for a word in any language, in the reader's languages. Answers are cached per word and language pair, so repeat lookups are instant. Free today; if that changes the operation will start answering `X-Credits-Charged`.
+         */
+        get: operations["defineWord"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/words/{word}/pronunciation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The word as it appears on the page, URL-encoded. One word or a short phrase. */
+                word: components["parameters"]["Word"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Hear a word spoken
+         * @description A signed link to a short recording of the word, for languages the device cannot speak itself. Recordings are cached per word and language.
+         */
+        get: operations["pronounceWord"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -466,7 +682,7 @@ export interface components {
          */
         CategorySlug: "fiction" | "non-fiction" | "science" | "technology" | "history" | "biography" | "self-help" | "business" | "education" | "children" | "romance" | "mystery" | "fantasy" | "science-fiction" | "horror" | "poetry" | "drama" | "philosophy" | "religion" | "medical" | "other";
         /**
-         * @description `public`: in the catalog and readable by anyone, signed in or not. `members`: readable by any signed-in member and listed in their catalog, never shown to anonymous callers. `private`: only the uploader. `shared`: the uploader plus the members listed in `shared_with`.
+         * @description `public`: in the catalog for everyone; readable by any signed-in member. `members`: listed and readable for signed-in members only, never shown to anonymous callers. `private`: only the uploader. `shared`: the uploader plus the members listed in `shared_with`.
          * @enum {string}
          */
         BookVisibility: "public" | "members" | "private" | "shared";
@@ -558,7 +774,8 @@ export interface components {
                 count: number;
             };
             view_count?: number;
-            uploader: components["schemas"]["UserSummary"];
+            /** @description Null only when the uploader's profile no longer exists. */
+            uploader: components["schemas"]["UserSummary"] | null;
             /** @description True when the caller uploaded this book. Always false for anonymous callers. */
             is_mine?: boolean;
             /** Format: date-time */
@@ -568,10 +785,85 @@ export interface components {
         };
         /** @description A book, plus the extras asked for with `include`. */
         BookDetail: components["schemas"]["Book"] & {
-            /** @description Present with `include=pages`. The first window of page images. */
+            viewer: components["schemas"]["BookViewer"];
+            /** @description Present with `include=pages` when the caller may read the book. The first window of page images. */
             pages?: components["schemas"]["PageWindow"];
             /** @description Present with `include=progress`. Null for anonymous callers. */
             progress?: components["schemas"]["ReaderProgress"] | null;
+            /** @description Present with `include=marks`. My bookmarks and notes in this book, one per page, in page order. Null for anonymous callers. */
+            marks?: components["schemas"]["BookMark"][] | null;
+            /** @description Present with `include=mine` (planned). Null for anonymous callers. */
+            mine?: components["schemas"]["MyBookState"] | null;
+            /** @description Present with `include=media` (planned). */
+            media?: components["schemas"]["MediaPolicy"];
+            /** @description Present with `include=paper` (planned). Null when the book is not a research paper. */
+            paper?: components["schemas"]["PaperDetail"] | null;
+            /** @description Increases whenever any page image is regenerated. A client that cached page images drops them when this changes (replaces reading book_pages.generated_at directly). */
+            pages_revision?: number;
+            view_count?: number;
+            /** @description Present with `include=reader`. Book-level settings the page reader needs on open. */
+            reader?: components["schemas"]["ReaderConfig"];
+            /** @description Present with `include=stats`. The book page's public counters. */
+            stats?: components["schemas"]["BookStats"];
+        };
+        BookStats: {
+            views: number;
+            watchers: number;
+            favorites: number;
+            ratings: number;
+            rating: number | null;
+            /** @description Ratings per star value, 1 to 5. */
+            distribution?: {
+                [key: string]: number;
+            };
+            /** @description The week's activity figures the page shows (readers, activity by day and type). */
+            activity?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** @description What the page reader needs about the book besides its pages: the content type (which picks the default layout), the publisher's alignment and narration settings, the inputs to the on-device media policy (the platform's per-level matrix and the strongest offline-vault grant across the book's clubs the caller can see), and the caller's saved reading language. Replaces five reads the reader made straight from the database. */
+        ReaderConfig: {
+            content_type: string | null;
+            reading_alignment: {
+                [key: string]: unknown;
+            } | null;
+            narration_settings: {
+                [key: string]: unknown;
+            } | null;
+            /** @enum {string} */
+            media_level: "public" | "friends" | "private" | "club";
+            media_levels: {
+                [key: string]: unknown;
+            } | null;
+            club_media: {
+                [key: string]: unknown;
+            } | null;
+            reading_lang: string | null;
+            reading_lang_source: string | null;
+            /** @description My last page in this book (null signed out or never opened). */
+            last_page?: number | null;
+            /** @description Changes whenever any page image is re-rendered; a device that cached page images drops them when it moves. */
+            pages_rev?: string | null;
+        };
+        /**
+         * @description What this caller may do with this book, decided by the server. `reason` is null when `can_read` is true; otherwise `sign_in_required` (anonymous caller), `no_access` (signed in, not on the book's list), `taken_down` (removed after a copyright notice) or `metadata_only` (a paper whose full text is not ours to host; the card and link are all there is).
+         * @example {
+         *       "can_read": false,
+         *       "can_edit": false,
+         *       "reason": "sign_in_required"
+         *     }
+         */
+        BookViewer: {
+            can_read: boolean;
+            can_edit: boolean;
+            /** @enum {string|null} */
+            reason: "sign_in_required" | "no_access" | "taken_down" | "metadata_only" | null;
+            /** @description Present with `include=download`. `createBookDownload` will succeed for this caller. */
+            can_download?: boolean;
+            /** @description (planned) Staff who may leave output reviews on this book see review tools in the reader. */
+            can_review?: boolean;
+            /** @description (planned) The caller may send `reportBook` and `flagPageText`. */
+            can_report?: boolean;
         };
         /**
          * @description The caller's progress in this book (the same record as `GET /me/progress/{book_id}`).
@@ -590,6 +882,20 @@ export interface components {
             seconds_read: number;
             /** Format: date-time */
             updated_at?: string | null;
+            /** @description Present with `include=resume`. The first words of `last_page` in the book's original language (about 160 characters, cut on a word), so the book page can show where I left off. Null when the page has no text yet. */
+            snippet?: string | null;
+        };
+        /**
+         * @description A page I marked. `note` when the bookmark carries my own text, otherwise `bookmark`.
+         * @example {
+         *       "page": 45,
+         *       "kind": "bookmark"
+         *     }
+         */
+        BookMark: {
+            page: number;
+            /** @enum {string} */
+            kind: "bookmark" | "note";
         };
         /**
          * @example {
@@ -654,12 +960,24 @@ export interface components {
             thumbnail?: components["schemas"]["ImageRef"];
             medium?: components["schemas"]["ImageRef"];
             high_res?: components["schemas"]["ImageRef"];
+            /** @description (planned) Present with `include=snippet` on `listBookPages`. */
+            snippet?: components["schemas"]["PageSnippet"] | null;
             /** @description File sizes so a client on a metered connection can choose. */
             bytes?: {
                 thumbnail?: number | null;
                 medium?: number | null;
                 high_res?: number | null;
             };
+        };
+        BookReadiness: {
+            /** @enum {string} */
+            state: "ready" | "preparing" | "unavailable";
+            /** @description True while the rendering job waits for a worker. */
+            queued: boolean;
+            /** @description Page images rendered so far. */
+            pages_ready: number;
+            /** @description Pages in the file; null until rendering starts. */
+            pages_total: number | null;
         };
         /** @description A range of pages; the documented exception to cursor pagination. */
         PageWindow: {
@@ -803,9 +1121,16 @@ export interface components {
             page: number;
             lang: components["schemas"]["LangCode"];
             voice: string;
-            url: components["schemas"]["Url"];
-            expires_at: components["schemas"]["Timestamp"];
+            /** @description Null in the `view=index` listing; ask with `page` for a playable link. */
+            url: components["schemas"]["Url"] | null;
+            expires_at: components["schemas"]["Timestamp"] | null;
             duration_ms: number | null;
+            /** @description With `view=index`. Sentence timings for read-along, in the clip's own clock. */
+            segments?: {
+                i?: number;
+                startMs?: number;
+                endMs?: number;
+            }[] | null;
             /** @description Recorded before the page text last changed; a fresh recording is on its way. */
             stale: boolean;
         };
@@ -831,13 +1156,42 @@ export interface components {
             cover_url?: string | null;
             language?: components["schemas"]["LangCode"];
         };
+        SearchResults: {
+            data: components["schemas"]["SearchHit"][];
+            /** @description Null on the last page and after 200 results. */
+            next_cursor: string | null;
+            /** @description Matches, exact up to 200. */
+            total: number;
+            /** @description More than 200 matched; show as 200+. */
+            total_capped: boolean;
+            hint?: components["schemas"]["SearchHint"] | null;
+            /** @description How the query was read, for "understood as" chips. */
+            understood_as?: {
+                /** @enum {string} */
+                label: "word" | "phrase" | "title" | "author" | "tag" | "isbn" | "term" | "domain" | "exclude" | "or";
+                value: string;
+            }[];
+        };
+        /** @description Why an answer is empty or capped, and one next step. Never reveals a book the caller may not see. */
+        SearchHint: {
+            /** @enum {string} */
+            code: "try_script" | "try_pages" | "no_text" | "private_off" | "capped" | "too_short";
+            /** @description In the caller's interface language. */
+            message: string;
+            suggested_query?: string | null;
+            /** @description For `try_script`, the book's text languages with page counts. */
+            langs?: {
+                lang: components["schemas"]["LangCode"];
+                pages: number;
+            }[];
+        };
         /**
          * @example {
          *       "kind": "page",
          *       "book": {
          *         "id": "book_2mCq1kZ9xTb4",
-         *         "slug": "arabian-nights-one-thousand-and-one-nights",
-         *         "title": "Arabian Nights: One Thousand and One Nights",
+         *         "slug": "arabian-nights",
+         *         "title": "Arabian Nights",
          *         "author": "Anonymous",
          *         "category": {
          *           "slug": "fiction",
@@ -847,22 +1201,59 @@ export interface components {
          *         "cover_url": null,
          *         "language": "en"
          *       },
-         *       "page": 37,
-         *       "lang": "en",
-         *       "snippet": "...the fisherman cast his net and drew up a <mark>brass jar</mark> sealed with lead...",
+         *       "can_read": true,
+         *       "page": 12,
+         *       "lang": "ur",
+         *       "is_translation": true,
+         *       "snippet": "...پہلے قلندر کی <mark>داستان</mark>، اڑتیس...",
+         *       "url": "https://ilm.red/books/fiction/arabian-nights/page/12?textLang=ur",
          *       "score": 0.82
          *     }
          */
         SearchHit: {
             /** @enum {string} */
-            kind: "book" | "page";
-            book: components["schemas"]["BookSummary"];
+            kind: "book" | "page" | "author" | "person" | "club" | "question";
+            book?: components["schemas"]["BookSummary"];
+            /** @description On `book` and `page` hits: the caller may read the text. `false` means details only. */
+            can_read?: boolean;
             /** @description Set on `page` hits. */
             page?: number | null;
-            /** @description Language of the matched text on `page` hits. */
+            /** @description Language of the matched text on `page` hits: the original's code or the translation's. */
             lang?: string | null;
+            /** @description On `page` hits: the match is in a saved translation. */
+            is_translation?: boolean;
+            /**
+             * @description Where a `book` hit matched.
+             * @enum {string|null}
+             */
+            matched_field?: "title" | "subtitle" | "author" | "description" | "tags" | "text" | null;
+            /**
+             * @description `phonetic` and `fuzzy` are the "Similar matches" group.
+             * @enum {string|null}
+             */
+            match_type?: "exact" | "prefix" | "phonetic" | "fuzzy" | null;
             /** @description Matched words wrapped in `<mark>`; nothing else is HTML. */
             snippet?: string | null;
+            /**
+             * Format: uri
+             * @description The book or page on ilm.red; page hits in a translation carry `?textLang=`.
+             */
+            url?: string;
+            /** @description On `author` hits: the name as written on the books. */
+            author?: string | null;
+            /** @description On `author` hits: visible books by this author. */
+            book_count?: number | null;
+            user?: components["schemas"]["UserSummary"];
+            /** @description On `club` hits. */
+            club?: {
+                id?: components["schemas"]["ClubId"];
+                name?: string;
+            } | null;
+            /** @description On `question` hits. */
+            question?: {
+                id?: string;
+                title?: string;
+            } | null;
             /** @description Relevance, only comparable within one response. */
             score: number;
         };
@@ -876,7 +1267,8 @@ export interface components {
          */
         PageHit: {
             page: number;
-            lang: components["schemas"]["LangCode"];
+            /** @description The translation the hit is in; null for the original text. */
+            lang: components["schemas"]["LangCode"] | null;
             snippet: string;
             match_count: number;
         };
@@ -928,6 +1320,7 @@ export interface components {
             updated_at?: string | null;
         };
         RatingSave: {
+            /** @description 0 keeps a written review without stars. */
             stars: number;
             /** @description Optional written review; null clears it. */
             review?: string | null;
@@ -1245,10 +1638,198 @@ export interface components {
             job_id?: components["schemas"]["JobId"] | null;
             stages: components["schemas"]["ProcessingStage"][];
         };
-        /** @description Every list returns this envelope. `next_cursor` is null on the last page. */
+        /** @description This caller's own relationship with the book, returned with `include=mine`. Null for anonymous callers. Replaces the favorites, watches, labels, ratings and reading-settings reads the book page made directly. */
+        MyBookState: {
+            /** @description Every label colour I put on this book (indexes 0 to 13, see `setBookLabel`). */
+            label_colors?: number[];
+            favorite: boolean;
+            /** @description Notify me when new pages, translations or audio arrive. */
+            watching: boolean;
+            /** @enum {string|null} */
+            label: "red" | "orange" | "yellow" | "green" | "blue" | "purple" | "gray" | null;
+            my_rating: components["schemas"]["Rating"] | null;
+            /** @description My saved reader settings for this book, with the preset already resolved. */
+            reading_settings: components["schemas"]["BookReadingSettings"] | null;
+        };
+        /** @description How the reader must protect this book's pages, returned with `include=media`. Decided by the server from site settings, the book's clubs and their add-ons. `content_key` is only present when `encrypted` is true and the caller may read the book. */
+        MediaPolicy: {
+            watermark: {
+                on: boolean;
+                /** @description Already filled in for this caller (for example their username). */
+                text?: string | null;
+                opacity?: number;
+            };
+            /**
+             * @description How long the device may keep page images and text.
+             * @enum {string}
+             */
+            cache: "none" | "session" | "device";
+            /** @description Page text and cached images are stored encrypted on the device. */
+            encrypted: boolean;
+            /** @description Per-book key for encrypted content. Never logged, never cached by the edge. */
+            content_key?: string;
+        };
+        /** @description Research paper fields, returned with `include=paper` when the book is a paper. */
+        PaperDetail: {
+            license?: string | null;
+            license_url?: string | null;
+            source_url?: string | null;
+            hosted_full_text?: boolean;
+            aliases?: unknown[] | Record<string, never> | null;
+            /** @description The first club this paper is shelved in, for the "back to the club" link. */
+            club?: {
+                id?: components["schemas"]["ClubId"];
+                name?: string;
+                slug?: string | null;
+            } | null;
+            arxiv_id?: string | null;
+            doi?: string | null;
+            authors: string[];
+            /** Format: date */
+            published_at?: string | null;
+            primary_category?: string | null;
+            abstract: string | null;
+            /** @description Plain-language summary written for club members. */
+            brief?: string | null;
+            brief_lang?: components["schemas"]["LangCode"] | null;
+            /** @description The paper's most important glossary terms, most salient first. */
+            key_terms: {
+                slug: components["schemas"]["Slug"];
+                name: string;
+                hook?: string | null;
+                /** @enum {string|null} */
+                level?: "beginner" | "intermediate" | "advanced" | null;
+                salience: number;
+            }[];
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description The first lines of a page's text, for the page strip on the book page. */
+        PageSnippet: {
+            lang: components["schemas"]["LangCode"];
+            text: string;
+        };
+        BookViewCreate: {
+            /**
+             * @default book_page
+             * @enum {string}
+             */
+            surface: "book_page" | "reader" | "embed";
+            /** @description A random id the client keeps, so anonymous views are counted once. */
+            device_id?: string;
+            /** @description Where this open came from (another site's address), for the traffic-source breakdown. */
+            referrer?: string | null;
+        };
+        DownloadTicket: {
+            url: components["schemas"]["Url"];
+            expires_at: components["schemas"]["Timestamp"];
+            filename: string;
+            /** @enum {string} */
+            content_type: "application/pdf" | "application/epub+zip" | "text/plain" | "application/x-mobipocket-ebook";
+            bytes?: number | null;
+        };
+        /**
+         * @example {
+         *       "type": "text_changed",
+         *       "book_id": "book_2mCq1kZ9xTb4",
+         *       "at": "2026-09-23T18:04:05Z",
+         *       "page": 37,
+         *       "lang": "ur",
+         *       "revision": 4
+         *     }
+         */
+        BookEvent: {
+            /** @enum {string} */
+            type: "pages_changed" | "text_changed" | "audio_ready" | "processing" | "invalidate" | "activity" | "flag";
+            /** @description For `flag` (signed-in readers), a sentence flag's new status on a page. */
+            flag?: {
+                page?: number;
+                lang?: string;
+                sentence_index?: number;
+                status?: string;
+            } | null;
+            /** @description For `invalidate`, the cache names to drop. */
+            keys?: string[];
+            /** @description For `activity`, the activity event id. */
+            event_id?: number;
+            /** @description For `activity`, the event as the reader is allowed to see it. */
+            activity?: {
+                [key: string]: unknown;
+            } | null;
+            book_id: components["schemas"]["BookId"];
+            at: components["schemas"]["Timestamp"];
+            pages_revision?: number;
+            page?: number;
+            lang?: components["schemas"]["LangCode"] | null;
+            revision?: number;
+            stage?: string;
+        };
+        PageFlagCreate: {
+            /**
+             * @description `wrong_word` (the text is wrong), `mispronounced` (narration says it wrong), `wrong_split` (sentences are cut in the wrong place), `audio_sync` (highlighting is out of step with the audio), `other`.
+             * @enum {string}
+             */
+            kind: "wrong_word" | "mispronounced" | "wrong_split" | "audio_sync" | "other";
+            lang?: components["schemas"]["LangCode"];
+            /**
+             * @default sentence
+             * @enum {string}
+             */
+            scope: "word" | "sentence" | "paragraph";
+            sentence_index: number;
+            /** @description Only with `scope` word. */
+            word_index?: number;
+            /** @description The word or sentence as the reader saw it. */
+            text?: string;
+            suggestion?: string;
+            note?: string;
+            /** @description Seconds into the narration, when flagged while listening. */
+            audio_at?: number;
+            voice?: string;
+        };
+        PageFlagStatus: {
+            sentence_index: number;
+            /** @enum {string} */
+            status: "pending" | "in_review" | "resolved" | "rejected";
+        };
+        PageFlagReceipt: {
+            id: string;
+            /** @enum {string} */
+            status: "pending";
+            created_at: components["schemas"]["Timestamp"];
+        };
+        WordDefinition: {
+            word: string;
+            source_lang: components["schemas"]["LangCode"];
+            /** @description The base form. */
+            lemma?: string | null;
+            /** @description The word rendered in the first other language. */
+            translation?: string | null;
+            transliteration?: string | null;
+            senses: {
+                lang: components["schemas"]["LangCode"];
+                part_of_speech?: string | null;
+                meaning: string;
+                example?: string | null;
+            }[];
+            cached: boolean;
+            /** @description True when the dictionary did not answer in time; ask again. */
+            timed_out?: boolean;
+        };
+        WordAudio: {
+            word: string;
+            lang: components["schemas"]["LangCode"];
+            url: components["schemas"]["Url"];
+            expires_at: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            content_type: "audio/mpeg" | "audio/wav";
+        };
+        /** @description Every list returns this envelope. `next_cursor` is null on the last page. Lists that can count cheaply also return `total` when asked (each list says so); `total_capped` is true when the count stopped at the list's cap. */
         Page: {
             data: unknown[];
             next_cursor: string | null;
+            total?: number;
+            total_capped?: boolean;
         };
         /** @description RFC 9457 problem document. Branch on `slug` (also the last segment of `type`), show `title`, quote `request_id`. */
         Problem: {
@@ -1273,6 +1854,8 @@ export interface components {
         ValidationProblem: components["schemas"]["Problem"] & {
             errors: components["schemas"]["FieldError"][];
         };
+        /** @example book_2mCq1kZ9xTb4 */
+        BookId: string;
         /**
          * @description BCP 47 language tag.
          * @example ur
@@ -1290,8 +1873,6 @@ export interface components {
          * @example arabian-nights-one-thousand-and-one-nights
          */
         Slug: string;
-        /** @example book_2mCq1kZ9xTb4 */
-        BookId: string;
         JobId: string;
         /** @description What a call will cost before it runs. `low` and `high` are null when the kind has never been measured. */
         PriceEstimate: {
@@ -1332,7 +1913,8 @@ export interface components {
         /** @description How a person appears anywhere they are named. Never an email. */
         UserSummary: {
             id: components["schemas"]["UserId"];
-            username: components["schemas"]["Username"];
+            /** @description Null for a member who has not picked a username yet. */
+            username: components["schemas"]["Username"] | null;
             display_name: string;
             /** Format: uri */
             avatar_url?: string | null;
@@ -1351,6 +1933,8 @@ export interface components {
             height?: number;
             expires_at: components["schemas"]["Timestamp"];
         };
+        /** @example club_7Kd0Wq2Rf1Ab */
+        ClubId: string;
         ReportId: string;
         /** @description Where to send a file. PUT the bytes to `upload_url` with the given headers before `expires_at`, then call the confirming endpoint the operation names. This is the one place the client talks to storage directly, and only with this signed URL. */
         UploadTicket: {
@@ -1362,6 +1946,25 @@ export interface components {
             };
             expires_at: components["schemas"]["Timestamp"];
             max_bytes: number;
+        };
+        /** @description Per-book reader settings (layout, fit, text language, presentation) plus the reading preset they resolve to, so the reader needs no second call to work out fonts and colours. The same shape is read and written at `/me/books/{book_id}/reading-settings`. */
+        BookReadingSettings: {
+            /** @description The saved settings, a closed set of known keys (see `saveMyReadingSettings`). */
+            settings: {
+                [key: string]: unknown;
+            };
+            /** @description The preset in force after club locks, language defaults and my overrides. */
+            resolved_preset: {
+                id: string | null;
+                /** @enum {string} */
+                source: "mine" | "club" | "language_default" | "site_default";
+                locked_by_club?: boolean;
+                values?: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Format: date-time */
+            updated_at: string | null;
         };
     };
     responses: {
@@ -1459,14 +2062,18 @@ export interface components {
         /** @description The `ETag` from your last read. When nothing changed the answer is `304` with no body. */
         IfNoneMatch: string;
         /** @description Extras to return with the book, comma separated. */
-        Include: ("pages" | "progress")[];
+        Include: ("pages" | "progress" | "mine" | "media" | "paper" | "reader" | "stats" | "marks" | "resume" | "download")[];
         /** @description First page of the window (1-based). Default 1. */
         From: number;
         /** @description Last page of the window, inclusive. Default `from + 49`, capped at the book's last page. At most 50 pages per call. */
         To: number;
-        /** @description What to look for. Words are matched in any order; quote a phrase to match it exactly. */
+        /** @description A language code (`ur`, `ar`, `fa`, `en`, ...) to return only hits in that language, the original or a translation; `all` for every language. `GET /search` defaults to `all`; `searchBook` defaults to the original text. */
+        SearchLang: components["schemas"]["LangCode"] | "all";
+        /** @description What to look for, in the library query language: words in any order, `"exact phrase"`, `field:term`, `OR`, `-exclude`. Any script. See `GET /search` for the matching rules. */
         Query: string;
         QuestionId: components["schemas"]["QuestionId"];
+        /** @description The word as it appears on the page, URL-encoded. One word or a short phrase. */
+        Word: string;
         /** @description BCP 47 language tag. A missing translation falls back to the original text plus `available_langs`. */
         Lang: components["schemas"]["LangCode"];
         /** @description A field name, prefixed with `-` for descending. Each list documents the fields it allows. */
@@ -1513,6 +2120,14 @@ export interface operations {
                 cursor?: components["parameters"]["Cursor"];
                 /** @description Page size. */
                 limit?: components["parameters"]["Limit"];
+                /** @description `me`: only books the caller uploaded (planned, v1.430.0). Members only; anonymous callers get 401. */
+                owner?: "me";
+                /** @description With `owner=me`, only books of this visibility (planned, v1.430.0). Without `owner=me` it is an error (422). */
+                visibility?: components["schemas"]["BookVisibility"];
+                /** @description `true` adds `total` to the page (planned, v1.430.0). Allowed with `owner=me` only. */
+                include_total?: boolean;
+                /** @description `summary` returns `BookSummary` rows instead of full `Book` rows (planned, v1.430.0). */
+                fields?: "full" | "summary";
             };
             header?: {
                 /** @description The `ETag` from your last read. When nothing changed the answer is `304` with no body. */
@@ -1523,7 +2138,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description One page of books. */
+            /** @description One page of books. `total` is present only with `include_total=true`. */
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];
@@ -1649,6 +2264,8 @@ export interface operations {
             query?: {
                 /** @description Extras to return with the book, comma separated. */
                 include?: components["parameters"]["Include"];
+                /** @description Centre the `include=pages` window on this page. */
+                page?: number;
             };
             header?: {
                 /** @description The `ETag` from your last read. When nothing changed the answer is `304` with no body. */
@@ -1684,6 +2301,8 @@ export interface operations {
             query?: {
                 /** @description Extras to return with the book, comma separated. */
                 include?: components["parameters"]["Include"];
+                /** @description Centre the `include=pages` window on this page. */
+                page?: number;
             };
             header?: {
                 /** @description The `ETag` from your last read. When nothing changed the answer is `304` with no body. */
@@ -1865,6 +2484,11 @@ export interface operations {
                 from?: components["parameters"]["From"];
                 /** @description Last page of the window, inclusive. Default `from + 49`, capped at the book's last page. At most 50 pages per call. */
                 to?: components["parameters"]["To"];
+                /** @description (planned) `snippet` adds the first lines of each page's text in `lang` (the page strip on the book page). `sizes` limits which image sizes are signed (default all three), so the page strip can ask for thumbnails only. */
+                include?: "snippet"[];
+                sizes?: ("thumbnail" | "medium" | "high_res")[];
+                /** @description BCP 47 language tag. A missing translation falls back to the original text plus `available_langs`. */
+                lang?: components["parameters"]["Lang"];
             };
             header?: {
                 /** @description The `ETag` from your last read. When nothing changed the answer is `304` with no body. */
@@ -1890,6 +2514,15 @@ export interface operations {
             };
             304: components["responses"]["NotModified"];
             401: components["responses"]["Unauthorized"];
+            /** @description Signed in, the book is visible, but its pages are not readable by this caller (`forbidden`). */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             404: components["responses"]["NotFound"];
             /** @description `to` is before `from`, or the range is wider than 50 pages (`validation_failed`). */
             422: {
@@ -1900,6 +2533,52 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ValidationProblem"];
                 };
             };
+        };
+    };
+    getBookReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Where the book stands. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookReadiness"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the file. */
+            302: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     getBookPageText: {
@@ -1949,6 +2628,8 @@ export interface operations {
     getBookText: {
         parameters: {
             query?: {
+                /** @description `snippet`: a short preview per page (at most 12 pages) instead of the full text. */
+                view?: "snippet";
                 /** @description First page of the window (1-based). Default 1. */
                 from?: components["parameters"]["From"];
                 /** @description Last page of the window, inclusive. Default `from + 49`, capped at the book's last page. At most 50 pages per call. */
@@ -2029,6 +2710,10 @@ export interface operations {
             query?: {
                 /** @description BCP 47 language tag. A missing translation falls back to the original text plus `available_langs`. */
                 lang?: components["parameters"]["Lang"];
+                /** @description `index`: the whole book, no links, with segments and rejected pages. */
+                view?: "index";
+                /** @description With `page`, only this voice's track. */
+                voice?: string;
                 /** @description Only this page's track(s). */
                 page?: number;
                 /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
@@ -2057,6 +2742,12 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Page"] & {
                         data?: components["schemas"]["AudioTrack"][];
+                        /** @description With `view=index`. Pages rejected in review; an empty `pages` list means the whole output. */
+                        rejected?: {
+                            kind: string;
+                            lang: string;
+                            pages: number[];
+                        }[];
                     };
                 };
             };
@@ -2106,16 +2797,21 @@ export interface operations {
     searchLibrary: {
         parameters: {
             query: {
-                /** @description What to look for. Words are matched in any order; quote a phrase to match it exactly. */
+                /** @description What to look for, in the library query language: words in any order, `"exact phrase"`, `field:term`, `OR`, `-exclude`. Any script. See `GET /search` for the matching rules. */
                 q: components["parameters"]["Query"];
-                /** @description BCP 47 language tag. A missing translation falls back to the original text plus `available_langs`. */
-                lang?: components["parameters"]["Lang"];
+                /** @description Which hits to return. `all` returns books and pages, plus authors, people, clubs and questions ranked below them. */
+                kind?: "all" | "book" | "page" | "author" | "person" | "club" | "question";
+                /** @description A language code (`ur`, `ar`, `fa`, `en`, ...) to return only hits in that language, the original or a translation; `all` for every language. `GET /search` defaults to `all`; `searchBook` defaults to the original text. */
+                lang?: components["parameters"]["SearchLang"];
                 category?: components["schemas"]["CategorySlug"];
-                kind?: "all" | "book" | "page";
+                /** @description Search inside this book only (page hits in page order, every language unless `lang` is set). */
+                book_id?: components["schemas"]["BookId"];
+                /** @description `me`: only books the caller uploaded (bookshelf search). Members only. */
+                owner?: "me";
                 /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
                 cursor?: components["parameters"]["Cursor"];
                 /** @description Page size. */
-                limit?: components["parameters"]["Limit"];
+                limit?: number;
             };
             header?: never;
             path?: never;
@@ -2131,9 +2827,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Page"] & {
-                        data?: components["schemas"]["SearchHit"][];
-                    };
+                    "application/json": components["schemas"]["SearchResults"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -2144,10 +2838,10 @@ export interface operations {
     searchBook: {
         parameters: {
             query: {
-                /** @description What to look for. Words are matched in any order; quote a phrase to match it exactly. */
+                /** @description What to look for, in the library query language: words in any order, `"exact phrase"`, `field:term`, `OR`, `-exclude`. Any script. See `GET /search` for the matching rules. */
                 q: components["parameters"]["Query"];
-                /** @description BCP 47 language tag. A missing translation falls back to the original text plus `available_langs`. */
-                lang?: components["parameters"]["Lang"];
+                /** @description A language code (`ur`, `ar`, `fa`, `en`, ...) to return only hits in that language, the original or a translation; `all` for every language. `GET /search` defaults to `all`; `searchBook` defaults to the original text. */
+                lang?: components["parameters"]["SearchLang"];
                 /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
                 cursor?: components["parameters"]["Cursor"];
                 /** @description Page size. */
@@ -2171,6 +2865,7 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Page"] & {
                         data?: components["schemas"]["PageHit"][];
+                        hint?: components["schemas"]["SearchHint"] | null;
                     };
                 };
             };
@@ -2436,6 +3131,267 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    listSimilarBooks: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: {
+                /** @description The `ETag` from your last read. When nothing changed the answer is `304` with no body. */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Similar books. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Book"][];
+                    };
+                };
+            };
+            304: components["responses"]["NotModified"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    recordBookView: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BookViewCreate"];
+            };
+        };
+        responses: {
+            /** @description Recorded (or already counted today). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Views not yet in `view_count`; null when the counter is unavailable. */
+                        delta: number | null;
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    createBookDownload: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The download link. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DownloadTicket"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    streamBookEvents: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Last-Event-ID"?: string;
+            };
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The event stream. Each `data:` line is one `BookEvent` as JSON. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["BookEvent"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    listPageFlags: {
+        parameters: {
+            query?: {
+                /** @description BCP 47 language tag. A missing translation falls back to the original text plus `available_langs`. */
+                lang?: components["parameters"]["Lang"];
+            };
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+                /** @description 1-based page number. */
+                n: components["parameters"]["PageNumber"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Flag statuses by sentence. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PageFlagStatus"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    flagPageText: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required on this call because it creates something or spends credits. See IdempotencyKey. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyRequired"];
+            };
+            path: {
+                book_id: components["parameters"]["BookId"];
+                /** @description 1-based page number. */
+                n: components["parameters"]["PageNumber"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PageFlagCreate"];
+            };
+        };
+        responses: {
+            /** @description The flag was received. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageFlagReceipt"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description The same `Idempotency-Key` was reused with a different body (`idempotency_conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    defineWord: {
+        parameters: {
+            query: {
+                source_lang: components["schemas"]["LangCode"];
+                /** @description Languages to explain in, comma separated. Default the caller's interface language. */
+                target_langs?: components["schemas"]["LangCode"][];
+                /** @description The sentence the word appeared in, so the right sense is chosen. */
+                context?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The word as it appears on the page, URL-encoded. One word or a short phrase. */
+                word: components["parameters"]["Word"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The definition. `senses` is empty when no definition was found. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WordDefinition"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    pronounceWord: {
+        parameters: {
+            query?: {
+                /** @description BCP 47 language tag. A missing translation falls back to the original text plus `available_langs`. */
+                lang?: components["parameters"]["Lang"];
+            };
+            header?: never;
+            path: {
+                /** @description The word as it appears on the page, URL-encoded. One word or a short phrase. */
+                word: components["parameters"]["Word"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The recording. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WordAudio"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
             422: components["responses"]["ValidationFailed"];
             429: components["responses"]["RateLimited"];
         };

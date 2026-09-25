@@ -69,6 +69,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/database-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Open a database session for the ilm.red web app
+         * @description For ilm.red's own website only, while its screens move onto this API. Exchanges a Clerk sign-in for a short-lived session with the ilm.red database for the same member, so the screens that still read the database directly keep working. Works only with a Clerk session token from ilm.red; API keys and other sessions get `forbidden`. It will be removed once no screen reads the database directly. Partners never need it.
+         */
+        post: operations["createMyDatabaseSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/entitlements": {
         parameters: {
             query?: never;
@@ -176,7 +196,7 @@ export interface paths {
         };
         /**
          * My reading progress across books
-         * @description Sortable by `updated_at` (default, newest first) and `percent`.
+         * @description Newest first. Books the caller can no longer see are left out.
          */
         get: operations["listMyProgress"];
         put?: never;
@@ -251,6 +271,26 @@ export interface paths {
         patch: operations["updateMyNote"];
         trace?: never;
     };
+    "/me/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live notifications for me (server-sent events)
+         * @description A `text/event-stream` for the signed-in member: a `notification` event (with `kind` and `book_id`) whenever something lands in my bell, so the badge and list refresh without polling. Replaces the private realtime channel the site opened directly. A comment every 25 seconds keeps proxies from closing it. Authenticate with the `Authorization` header.
+         */
+        get: operations["streamMyEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/notifications": {
         parameters: {
             query?: never;
@@ -286,6 +326,86 @@ export interface paths {
          */
         post: operations["markMyNotificationsRead"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/book-marks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My hearts and label colours, and my progress on the books named
+         * @description Every book I favourited and every label colour I put on a book, for drawing the hearts and colour dots on book cards anywhere on the site in one call. With `book_ids`, also my reading progress and shelf status for those books (at most 200).
+         */
+        get: operations["getMyBookMarks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How many books I have
+         * @description Counts of the books I uploaded, by visibility, with how many have searchable text and how many are still being processed. Same numbers and exclusions as the bookshelf (taken-down books are not counted). `members` is 0 until members visibility ships. Assistants without `library:private` get only `public` (the other counts are null) and `private_shared_with_agent: false`.
+         */
+        get: operations["getMyLibrary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/searches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My search history
+         * @description Searches I made while search history was on (`search_history` in my preferences), newest first, from every place I search: the website, the app, the API and assistants I allowed to save searches (`search:history` scope). Kept 90 days, at most 500. Empty when history is off. An assistant may call it only with the `search:history` scope.
+         */
+        get: operations["listMySearches"];
+        put?: never;
+        post?: never;
+        /** Delete my whole search history */
+        delete: operations["clearMySearches"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/searches/{search_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: components["parameters"]["SearchEntryId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete one saved search */
+        delete: operations["deleteMySearch"];
         options?: never;
         head?: never;
         patch?: never;
@@ -376,11 +496,186 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/books/{book_id}/reading-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * My reader settings for one book
+         * @description Layout, fit, text language, secondary language and presentation I chose for this book, with the reading preset they resolve to (club locks and language defaults applied). Null `settings` means I never changed anything and the defaults apply. Also returned inside `getBook` with `include=mine`, so the reader rarely needs this call on its own.
+         */
+        get: operations["getMyReadingSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change my reader settings for one book
+         * @description Send only the keys that changed; each is saved on its own, so two tabs changing different settings never overwrite each other. A setting a club has locked is refused with `forbidden` and the lock is named in `detail`. Answers with the whole settings object and the preset it now resolves to.
+         */
+        patch: operations["saveMyReadingSettings"];
+        trace?: never;
+    };
+    "/me/watches/{book_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Tell me when this book gets new pages, text or audio */
+        put: operations["watchBook"];
+        post?: never;
+        /** Stop telling me about this book */
+        delete: operations["unwatchBook"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/labels/{book_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put a colour label on a book
+         * @description Private to me. One label per book; putting a new one replaces the old.
+         */
+        put: operations["setBookLabel"];
+        post?: never;
+        /** Remove my label from a book */
+        delete: operations["clearBookLabel"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/reader-profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The family reader profiles on my account
+         * @description Children or other readers who share my account, each with their own weekly goal.
+         */
+        get: operations["listMyReaderProfiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send reading activity in batches
+         * @description The reader queues small events (page viewed, time on page, still here) and sends them every 30 seconds and when the tab is hidden, at most 50 per call. Replaces the direct record_page_interaction and record_reading_time calls and the activity-live function. Events older than 24 hours or dated in the future are dropped, and time on page is capped per event, so a tab left open cannot inflate stats. Reading position is NOT sent here; it goes to `saveMyProgress`.
+         */
+        post: operations["recordMyActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish first-run setup
+         * @description Saves the interface language, year of birth and at least three favourite categories from the first-run setup, or records that the member skipped it. Replaces the direct complete_onboarding call. Answers with the categories saved, which the next step uses to suggest a starter shelf.
+         */
+        post: operations["completeMyOnboarding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/starter-shelf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggest public books for a new member's shelf
+         * @description Up to `per_category` public, fully processed books from each of my saved favourite categories, best first (most read in the last 90 days, then rating), in my interface language first. Books I already have on a shelf are left out. Nothing is added until I confirm with `addBooksToMyShelf`.
+         */
+        get: operations["listMyStarterBooks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/shelf/{shelf}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                shelf: "want-to-read" | "reading" | "finished";
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Put several books on one of my shelves
+         * @description Adds up to 15 books to a shelf in one call, for example the starter shelf the member just confirmed. Books the member cannot see are skipped, not failed, and counted in `skipped`. A book already on another shelf keeps that shelf unless `move` is true.
+         */
+        post: operations["addBooksToMyShelf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         Me: {
+            /** @description With `include=profile`. My whole profile record (preferences, onboarding, premium flags), without its database id. */
+            profile?: {
+                [key: string]: unknown;
+            } | null;
             id: components["schemas"]["UserId"];
             /** @description `null` until you choose one. Names chosen before usernames had rules may contain capitals, spaces or hyphens; they keep working, and a new or changed name must match `Username`. */
             username: string | null;
@@ -399,6 +694,15 @@ export interface components {
             /** Format: date-time */
             deletion_scheduled_at?: string | null;
             created_at: components["schemas"]["Timestamp"];
+        };
+        DatabaseSession: {
+            access_token: string;
+            refresh_token: string;
+            /** @description Unix seconds. */
+            expires_at: number;
+            expires_in: number;
+            /** @constant */
+            token_type: "bearer";
         };
         MePatch: {
             username?: components["schemas"]["Username"];
@@ -421,6 +725,25 @@ export interface components {
             flags: {
                 [key: string]: boolean;
             };
+            /** @description Permission keys I hold (for example `canManageBooks`), so screens can shape menus from one call instead of asking has_permissions per key. The server still checks every call itself. */
+            permissions?: string[];
+            /** @description Every feature flag with its value for me (my own override wins over the global switch). */
+            flag_values?: {
+                [key: string]: boolean;
+            };
+            /** @description My credit account (monthly limit, remaining, usage, purchased balance, period), for the identity capsule. */
+            billing?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description The platform's per-level media protection matrix (public, friends, private, club). */
+            media_levels?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description The reader watermark text template and opacity. */
+            watermark?: {
+                text?: string | null;
+                opacity?: number | null;
+            } | null;
             clubs: {
                 club_id: components["schemas"]["ClubId"];
                 /** @enum {string} */
@@ -432,6 +755,17 @@ export interface components {
             reading: components["schemas"]["ReadingPreferences"];
             narration_voice?: string | null;
             background_id?: string | null;
+            /** @description The reader background for all my books; a book's own background overrides it. */
+            all_books_background?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Which home widgets are open or pinned, with its own `updated_at` (last write wins). */
+            home_layout?: {
+                [key: string]: unknown;
+            } | null;
+            reader_level?: string | null;
+            /** @description Keep my search history (planned, v1.430.0). Off by default. */
+            search_history?: boolean;
         };
         ReadingPreferences: {
             preset?: string | null;
@@ -457,6 +791,80 @@ export interface components {
             };
             narration_voice?: string | null;
             background_id?: string | null;
+            all_books_background?: {
+                [key: string]: unknown;
+            } | null;
+            home_layout?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Turn search history on or off (planned, v1.430.0). */
+            search_history?: boolean;
+            /** @description With `search_history=false`, also delete what is saved. Default true. */
+            delete_search_history?: boolean;
+        };
+        /**
+         * @example {
+         *       "public": {
+         *         "books": 351,
+         *         "with_text": 340,
+         *         "processing": 0
+         *       },
+         *       "members": {
+         *         "books": 0,
+         *         "with_text": 0,
+         *         "processing": 0
+         *       },
+         *       "private": {
+         *         "books": 192,
+         *         "with_text": 181,
+         *         "processing": 0
+         *       },
+         *       "shared": {
+         *         "books": 2,
+         *         "with_text": 2,
+         *         "processing": 0
+         *       },
+         *       "total": 545,
+         *       "private_shared_with_agent": true
+         *     }
+         */
+        LibraryCounts: {
+            public: components["schemas"]["VisibilityCount"];
+            members: components["schemas"]["VisibilityCount"] | null;
+            private: components["schemas"]["VisibilityCount"] | null;
+            shared: components["schemas"]["VisibilityCount"] | null;
+            /** @description All my books this caller may count. */
+            total: number;
+            /** @description False when an assistant without `library:private` asks; always true for the member's own calls. */
+            private_shared_with_agent: boolean;
+        };
+        VisibilityCount: {
+            books: number;
+            /** @description Books with at least one page of searchable text. */
+            with_text: number;
+            /** @description Books still being processed. */
+            processing: number;
+        };
+        SearchEntry: {
+            id: components["schemas"]["SearchEntryId"];
+            query: string;
+            /** @enum {string|null} */
+            kind?: "all" | "book" | "page" | "author" | "person" | "club" | "question" | null;
+            /** @description `lang`, `category`, `owner` as searched. */
+            filters?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Set when searching inside one book (null if that book is gone). */
+            book?: {
+                id?: components["schemas"]["BookId"];
+                title?: string;
+            } | null;
+            result_count?: number | null;
+            /** @enum {string} */
+            source: "web" | "app" | "api" | "assistant";
+            /** @description The assistant's name when `source` is `assistant`. */
+            assistant?: string | null;
+            created_at: components["schemas"]["Timestamp"];
         };
         /** @enum {string} */
         ShelfName: "reading" | "finished" | "want-to-read" | "favorites" | "uploaded";
@@ -482,12 +890,26 @@ export interface components {
             seconds_read: number;
             /** Format: date-time */
             updated_at?: string | null;
+            /** @description With `include=book`: the book, in the same shape getBook returns. */
+            book?: {
+                [key: string]: unknown;
+            } | null;
         };
+        /** @description Send `page` to move my position, `reading_lang` to remember my text language, or both. Since v1.431.0 `page` is optional: a language change alone must not move my position (it used to stamp whatever page the reader had just opened on over where I had read to). */
         ProgressSave: {
-            page: number;
+            page?: number;
+            /** @description Pages in the book as the reader sees it, so percent is right before the server's count catches up. */
+            total_pages?: number;
             /** @description Seconds read since the last save from this device. Capped at an hour so a tab left open cannot inflate the total. */
             seconds_read_delta?: number;
             device_id?: string;
+            /** @description The text language the reader is reading in, remembered per book. */
+            reading_lang?: components["schemas"]["LangCode"];
+            /**
+             * @description How that language was chosen (the reader's pick, a link they opened, or the site's first guess).
+             * @enum {string}
+             */
+            reading_lang_source?: "user" | "link" | "seed";
         };
         /** @enum {string} */
         NoteKind: "bookmark" | "highlight" | "annotation";
@@ -514,6 +936,8 @@ export interface components {
             text?: string;
             /** @enum {string} */
             color?: "yellow" | "green" | "blue" | "pink" | "purple";
+            /** @description The language of the text the reader was looking at, for a bookmark made on a translation. */
+            lang?: components["schemas"]["LangCode"];
         };
         NotePatch: {
             text?: string | null;
@@ -522,16 +946,37 @@ export interface components {
         };
         Notification: {
             id: string;
-            /** @enum {string} */
-            kind: "reply" | "mention" | "invite" | "report_answered" | "suggestion_answered" | "job_done" | "post_published" | "billing" | "announcement";
+            /** @description What happened, as the site names it (for example `reply_to_me`, `new_translation`, `followed_book_update`). */
+            kind: string;
             title: string;
             body?: string | null;
             /** Format: uri */
             link?: string | null;
             read: boolean;
             created_at: components["schemas"]["Timestamp"];
+            book_id?: components["schemas"]["BookId"] | null;
+            event_id?: number | null;
+            payload?: {
+                [key: string]: unknown;
+            } | null;
         };
         Stats: {
+            /** @description Points, current and next rank, badge counts, as the header capsule and profile show them. */
+            summary?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description The current rank's full record (name, level, colour, icon, benefits, minimum points). */
+            rank_detail?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Progress toward the next rank. */
+            rank_progress?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Earned badges with their full records, newest first. */
+            badge_details?: {
+                [key: string]: unknown;
+            }[];
             points: number;
             streak_days: number;
             rank?: string | null;
@@ -580,6 +1025,108 @@ export interface components {
                 at: components["schemas"]["Timestamp"];
             }[];
         };
+        /** @description Only the keys that changed. `null` resets a key to the default. The web app, which keeps its own richer settings object, sends it whole as `settings` instead (`null` clears it). */
+        ReadingSettingsPatch: {
+            /** @description The whole settings object, replacing what is stored. Use this or the named keys, not both. */
+            settings?: {
+                [key: string]: unknown;
+            } | null;
+            /** @enum {string|null} */
+            layout?: "single" | "spread" | "text" | "bilingual" | "image_text" | "leaf" | null;
+            /** @enum {string|null} */
+            fit?: "width" | "height" | "page" | null;
+            zoom?: number | null;
+            text_lang?: components["schemas"]["LangCode"] | null;
+            secondary_lang?: components["schemas"]["LangCode"] | null;
+            preset?: string | null;
+            font_family?: string | null;
+            font_size?: number | null;
+            line_height?: number | null;
+            /** @enum {string|null} */
+            text_align?: "start" | "justify" | "center" | null;
+            /** @enum {string|null} */
+            theme?: "light" | "sepia" | "dark" | "system" | null;
+            background_id?: string | null;
+        };
+        /** @description Adds one colour to my labels on this book (a book can carry several). The palette is the site's 14 label colours, by index: 0 red, 1 orange, 2 amber, 3 yellow, 4 lime, 5 green, 6 teal, 7 cyan, 8 blue, 9 indigo, 10 violet, 11 fuchsia, 12 pink, 13 gray. */
+        BookLabelSave: {
+            color: number;
+        };
+        ReaderProfile: {
+            id: string;
+            name: string;
+            emoji?: string | null;
+            age_band?: string | null;
+            weekly_goal_pages: number;
+        };
+        ActivityBatch: {
+            device_id?: string;
+            events: components["schemas"]["ActivityEvent"][];
+        };
+        ActivityEvent: {
+            /**
+             * @description `reader_open` reports how long the reader took to show the first page (`ms`, `cold`, `device`), one per open; stored in its own timing table with no personal data.
+             * @enum {string}
+             */
+            type: "page_view" | "time_on_page" | "heartbeat" | "reader_open";
+            at: components["schemas"]["Timestamp"];
+            book_id?: components["schemas"]["BookId"];
+            page?: number;
+            /** @description For `time_on_page`; capped at 10 minutes per event. */
+            seconds?: number;
+            /** @enum {string} */
+            mode?: "image" | "text" | "bilingual" | "audio";
+            lang?: components["schemas"]["LangCode"];
+            /** @description For `reader_open`: milliseconds from opening to the first page image. */
+            ms?: number;
+            /** @description For `reader_open`: true when nothing was cached from an earlier visit. */
+            cold?: boolean;
+            /** @enum {string} */
+            device?: "phone" | "tablet" | "laptop";
+            /**
+             * @description For `reader_open`: which reader screen opened.
+             * @enum {string}
+             */
+            surface?: "laptop-reader" | "phone-lightbox";
+            /**
+             * @description For `reader_open`: whether the reader opened through the API.
+             * @enum {string}
+             */
+            via?: "api" | "direct";
+            /** @description For `time_on_page`: the reader profile reading (one of yours; anything else is ignored). */
+            reader_profile?: string;
+        };
+        OnboardingSave: {
+            /** @constant */
+            skip: true;
+        } | {
+            interface_lang: components["schemas"]["LangCode"];
+            birth_year?: number | null;
+            preferred_categories: components["schemas"]["Slug"][];
+        };
+        StarterBook: {
+            id: components["schemas"]["BookId"];
+            slug: components["schemas"]["Slug"];
+            title: string;
+            author?: string | null;
+            language: components["schemas"]["LangCode"];
+            category: components["schemas"]["CategoryRef"];
+            /** Format: uri */
+            cover_url?: string | null;
+            page_count?: number;
+            /** @enum {string} */
+            reason?: "popular_in_category" | "highly_rated" | "in_your_language";
+        };
+        ShelfBatchAdd: {
+            book_ids: components["schemas"]["BookId"][];
+            /** @default false */
+            move: boolean;
+            /**
+             * @default manual
+             * @enum {string}
+             */
+            source: "starter_shelf" | "manual";
+        };
         /** @description RFC 9457 problem document. Branch on `slug` (also the last segment of `type`), show `title`, quote `request_id`. */
         Problem: {
             /**
@@ -616,15 +1163,49 @@ export interface components {
             status: "queued" | "running" | "done" | "failed" | "cancelled";
             estimate?: components["schemas"]["PriceEstimate"];
         };
-        /** @description Every list returns this envelope. `next_cursor` is null on the last page. */
+        /** @description Every list returns this envelope. `next_cursor` is null on the last page. Lists that can count cheaply also return `total` when asked (each list says so); `total_capped` is true when the count stopped at the list's cap. */
         Page: {
             data: unknown[];
             next_cursor: string | null;
+            total?: number;
+            total_capped?: boolean;
         };
         /** @example book_2mCq1kZ9xTb4 */
         BookId: string;
         NoteId: string;
         InviteId: string;
+        /** @example club_7Kd0Wq2Rf1Ab */
+        ClubId: string;
+        /** @description Per-book reader settings (layout, fit, text language, presentation) plus the reading preset they resolve to, so the reader needs no second call to work out fonts and colours. The same shape is read and written at `/me/books/{book_id}/reading-settings`. */
+        BookReadingSettings: {
+            /** @description The saved settings, a closed set of known keys (see `saveMyReadingSettings`). */
+            settings: {
+                [key: string]: unknown;
+            };
+            /** @description The preset in force after club locks, language defaults and my overrides. */
+            resolved_preset: {
+                id: string | null;
+                /** @enum {string} */
+                source: "mine" | "club" | "language_default" | "site_default";
+                locked_by_club?: boolean;
+                values?: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Format: date-time */
+            updated_at: string | null;
+        };
+        /**
+         * @description Lowercase words joined by hyphens.
+         * @example arabian-nights-one-thousand-and-one-nights
+         */
+        Slug: string;
+        CategoryRef: {
+            slug: components["schemas"]["Slug"];
+            name: string;
+            emoji: string;
+            color?: string;
+        };
         /**
          * @description The stable part of a problem. Branch on this, never on `title` or `detail`.
          * @enum {string}
@@ -643,6 +1224,8 @@ export interface components {
             /** @enum {string} */
             source: "measured" | "kind_spread" | "uncalibrated";
         };
+        /** @description One saved search in a member's history. */
+        SearchEntryId: string;
         /** @example user_4Fq9ZtW1Lm8K */
         UserId: string;
         /**
@@ -654,23 +1237,11 @@ export interface components {
         LangCode: string;
         /** @example bilgrami */
         Username: string;
-        /** @example club_7Kd0Wq2Rf1Ab */
-        ClubId: string;
-        /**
-         * @description Lowercase words joined by hyphens.
-         * @example arabian-nights-one-thousand-and-one-nights
-         */
-        Slug: string;
-        CategoryRef: {
-            slug: components["schemas"]["Slug"];
-            name: string;
-            emoji: string;
-            color?: string;
-        };
         /** @description How a person appears anywhere they are named. Never an email. */
         UserSummary: {
             id: components["schemas"]["UserId"];
-            username: components["schemas"]["Username"];
+            /** @description Null for a member who has not picked a username yet. */
+            username: components["schemas"]["Username"] | null;
             display_name: string;
             /** Format: uri */
             avatar_url?: string | null;
@@ -734,6 +1305,15 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
+        /** @description The caller is known but may not do this (`forbidden`, `scope_missing`, `premium_required`, `internal_only`). */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
         /** @description Done. No body. */
         NoContent: {
             headers: {
@@ -765,6 +1345,7 @@ export interface components {
         BookId: components["schemas"]["BookId"];
         /** @description Required on this call because it creates something or spends credits. See IdempotencyKey. */
         IdempotencyKeyRequired: string;
+        SearchEntryId: components["schemas"]["SearchEntryId"];
     };
     requestBodies: never;
     headers: {
@@ -779,7 +1360,10 @@ export type $defs = Record<string, never>;
 export interface operations {
     getMe: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description `profile`: also return my whole profile record, as the web app's account screens use it. */
+                include?: "profile";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -916,6 +1500,32 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    createMyDatabaseSession: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A session for supabase-js (`setSession`). It refreshes itself. Never cached. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatabaseSession"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             429: components["responses"]["RateLimited"];
         };
     };
@@ -1088,6 +1698,8 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 /** @description A field name, prefixed with `-` for descending. Each list documents the fields it allows. */
                 sort?: components["parameters"]["Sort"];
+                /** @description `book` adds each book (as getBook returns it, cover link included), for continue-reading rows. */
+                include?: "book"[];
             };
             header?: never;
             path?: never;
@@ -1264,6 +1876,31 @@ export interface operations {
             422: components["responses"]["ValidationFailed"];
         };
     };
+    streamMyEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The event stream. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": {
+                        kind?: string;
+                        book_id?: components["schemas"]["BookId"] | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
     listMyNotifications: {
         parameters: {
             query?: {
@@ -1318,6 +1955,136 @@ export interface operations {
             204: components["responses"]["NoContent"];
             401: components["responses"]["Unauthorized"];
             422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getMyBookMarks: {
+        parameters: {
+            query?: {
+                book_ids?: components["schemas"]["BookId"][];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description My marks. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        favorites: components["schemas"]["BookId"][];
+                        labels: {
+                            book_id: components["schemas"]["BookId"];
+                            color: number;
+                        }[];
+                        progress?: {
+                            book_id: components["schemas"]["BookId"];
+                            page: number | null;
+                            total?: number | null;
+                        }[];
+                        shelf?: {
+                            book_id: components["schemas"]["BookId"];
+                            status: string | null;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getMyLibrary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description My library counts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryCounts"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listMySearches: {
+        parameters: {
+            query?: {
+                source?: "web" | "app" | "api" | "assistant";
+                /** @description Opaque cursor from the previous page's `next_cursor`. Omit for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description Page size. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of saved searches. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"] & {
+                        data?: components["schemas"]["SearchEntry"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    clearMySearches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    deleteMySearch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                search_id: components["parameters"]["SearchEntryId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     getMyStats: {
@@ -1461,6 +2228,327 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getMyReadingSettings: {
+        parameters: {
+            query?: {
+                /** @description The reader's colour family, which picks the preset variant (default `light`). */
+                theme_group?: "light" | "dark" | "sepia";
+                /** @description Resolve as read inside this club (club locks apply). */
+                club_id?: components["schemas"]["ClubId"];
+            };
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description My settings for this book. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookReadingSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    saveMyReadingSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReadingSettingsPatch"];
+            };
+        };
+        responses: {
+            /** @description The saved settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookReadingSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    watchBook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Whether I am watching now, and the book's watcher count (null when unchanged). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        watching: boolean;
+                        watchers: number | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    unwatchBook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Whether I am watching now, and the book's watcher count (null when unchanged). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        watching: boolean;
+                        watchers: number | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    setBookLabel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookLabelSave"];
+            };
+        };
+        responses: {
+            204: components["responses"]["NoContent"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    clearBookLabel: {
+        parameters: {
+            query?: {
+                /** @description Remove only this colour (0 to 13); without it every colour on the book is removed. */
+                color?: number;
+            };
+            header?: never;
+            path: {
+                book_id: components["parameters"]["BookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: components["responses"]["NoContent"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listMyReaderProfiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description My reader profiles, oldest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReaderProfile"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    recordMyActivity: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required on this call because it creates something or spends credits. See IdempotencyKey. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyRequired"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityBatch"];
+            };
+        };
+        responses: {
+            /** @description Accepted. `accepted` and `dropped` count the events. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        accepted: number;
+                        dropped: number;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description The same `Idempotency-Key` was reused with a different body (`idempotency_conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["RateLimited"];
+        };
+    };
+    completeMyOnboarding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Replay protection for 24 hours. The same key with the same body replays the first response; the same key with a different body is refused with `idempotency_conflict`. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OnboardingSave"];
+            };
+        };
+        responses: {
+            /** @description Saved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        onboarded: boolean;
+                        preferred_categories: components["schemas"]["Slug"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listMyStarterBooks: {
+        parameters: {
+            query?: {
+                per_category?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Suggestions grouped by category. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        groups: {
+                            category: components["schemas"]["CategoryRef"];
+                            books: components["schemas"]["StarterBook"][];
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    addBooksToMyShelf: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required on this call because it creates something or spends credits. See IdempotencyKey. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKeyRequired"];
+            };
+            path: {
+                shelf: "want-to-read" | "reading" | "finished";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShelfBatchAdd"];
+            };
+        };
+        responses: {
+            /** @description What was added. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        added: number;
+                        skipped: number;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description The same `Idempotency-Key` was reused with a different body (`idempotency_conflict`). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["RateLimited"];
         };
     };
 }
